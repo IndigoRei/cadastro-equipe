@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadastro da Equipe | Índigo Rei</title>
+<meta name="description" content="Cadastro da equipe do Instituto Índigo Rei: foto, formação e tamanho da camisa do uniforme.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#062D56">
+<link rel="icon" href="simbolo.png">
+<link rel="apple-touch-icon" href="simbolo.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Índigo Rei">
+<meta property="og:title" content="Cadastro da Equipe | Índigo Rei">
+<meta property="og:description" content="Sua foto, sua formação e o tamanho da camisa do uniforme. Leva cerca de 10 minutos.">
+<meta property="og:url" content="https://equipe.indigorei.com.br/">
+<meta property="og:image" content="https://equipe.indigorei.com.br/compartilhar.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#062D56; --navy-2:#0A3D73; --gold:#C89C36; --gold-2:#B0862A; --gold-soft:#F5EBD3;
+    --rose:#C38696; --teal:#448493;
+    --bg:#F4F1EA; --card:#FFFFFF; --ink:#18212E; --muted:#5E6876; --line:#E2DCCF; --field:#FBFAF6;
+    --erro:#B3261E; --erro-soft:#FCEDEC; --ok:#2E7D5B;
+    --raio:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:'Poppins',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
+    font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+
+  .progresso{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(6,45,86,.15);z-index:20}
+  .progresso-barra{height:100%;width:0;background:var(--gold);transition:width .35s ease}
+
+  .faixa{position:absolute;top:0;left:0;right:0;height:240px;background-color:var(--navy);
+    background-image:radial-gradient(circle at 88% 18%,rgba(200,156,54,.38),transparent 42%),
+                     radial-gradient(circle at 8% 100%,rgba(68,132,147,.40),transparent 45%);z-index:0}
+  .coluna{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:44px 16px 56px}
+
+  .cartao{background:var(--card);border:1px solid var(--line);border-radius:var(--raio);padding:22px 24px;margin-bottom:12px;
+    box-shadow:0 1px 2px rgba(6,45,86,.04)}
+
+  /* Capa */
+  .cartao.capa{padding:0;overflow:hidden;border:0;box-shadow:0 14px 34px rgba(6,45,86,.20);margin-bottom:22px}
+  .capa-topo{height:8px;background:linear-gradient(90deg,var(--gold),#E4C67C 50%,var(--gold))}
+  .capa-corpo{padding:28px 28px 24px}
+  .logo{display:block;max-width:250px;max-height:92px;width:auto;height:auto;margin:0 0 20px}
+  .marca{font-weight:700;font-size:22px;color:var(--navy);margin:0 0 18px;letter-spacing:.02em}
+  .marca span{color:var(--gold)}
+  h1{font-size:28px;line-height:1.2;margin:0 0 12px;color:var(--navy);font-weight:600;letter-spacing:-.01em}
+  .capa p{margin:0 0 10px;color:#38414E}
+  .capa .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .selo{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--navy);
+    background:var(--gold-soft);border-radius:999px;padding:5px 12px}
+  .selo svg{width:14px;height:14px}
+  .capa .legenda-obrig{font-size:13px;color:var(--erro);margin:16px 0 0}
+
+  /* Seções */
+  .secao{margin-top:26px}
+  .secao-cab{display:flex;gap:14px;align-items:flex-start;border-left:5px solid var(--gold);padding:18px 22px}
+  .secao-num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;font-weight:600;
+    display:grid;place-items:center;font-size:15px}
+  .secao-cab h2{margin:2px 0 2px;font-size:19px;color:var(--navy);font-weight:600}
+  .secao-cab p{margin:0;font-size:13.5px;color:var(--muted)}
+
+  /* Perguntas */
+  .pergunta{position:relative;transition:box-shadow .2s,border-color .2s}
+  .pergunta:focus-within{border-color:#C9D3E0;box-shadow:inset 4px 0 0 var(--navy),0 6px 16px rgba(6,45,86,.07)}
+  .pergunta.tem-erro{border-color:#EFC2BE;box-shadow:inset 4px 0 0 var(--erro)}
+  .rotulo{display:block;font-weight:500;font-size:16px;color:var(--ink);margin:0 0 4px}
+  .obrig{color:var(--erro);margin-left:3px}
+  .obrig-psi{display:none}
+  body.psi .obrig-psi{display:inline}
+  .ajuda{font-size:13px;color:var(--muted);margin:0 0 12px}
+  .ajuda:last-child{margin-bottom:0}
+  .rotulo + .controle, .rotulo + .chips, .rotulo + .tamanhos, .rotulo + .modelagens{margin-top:12px}
+
+  input[type=text],input[type=email],input[type=tel],select,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);
+    background:var(--field);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;outline:none;
+    transition:border-color .15s,box-shadow .15s,background .15s;-webkit-appearance:none;appearance:none}
+  textarea{resize:vertical;min-height:100px;line-height:1.5}
+  textarea.curto{min-height:70px}
+  input::placeholder,textarea::placeholder{color:#A39C8E}
+  input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 4px var(--gold-soft);background:#fff}
+  .tem-erro input,.tem-erro select,.tem-erro textarea{border-color:#E3A29C}
+  select{cursor:pointer;padding-right:42px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23062D56' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 16px center}
+  .linha2{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;max-width:360px}
+
+  .contador{font-size:12px;color:var(--muted);text-align:right;margin-top:6px;font-variant-numeric:tabular-nums}
+  .contador.perto{color:var(--gold-2)} .contador.cheio{color:var(--erro)}
+
+  .erro-msg{display:none;color:var(--erro);font-size:13px;margin-top:10px;align-items:center;gap:6px}
+  .erro-msg svg{width:16px;height:16px;flex:none}
+  .tem-erro .erro-msg{display:flex}
+
+  /* Chips (múltipla escolha) */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{position:relative;cursor:pointer}
+  .chip input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+  .chip span{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1.5px solid var(--line);border-radius:999px;
+    background:var(--field);font-size:14px;line-height:1.3;transition:background .15s,border-color .15s,color .15s;user-select:none}
+  .chip span::before{content:"";width:15px;height:15px;border-radius:4px;border:1.5px solid #B9B2A3;flex:none;transition:all .15s;
+    background-position:center;background-repeat:no-repeat;background-size:11px}
+  .chip:hover span{border-color:#C7BEAA}
+  .chip input:checked + span{background:var(--navy);border-color:var(--navy);color:#fff}
+  .chip input:checked + span::before{border-color:var(--gold);background-color:var(--gold);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M1 5l3.5 3.5L11 1.5' fill='none' stroke='%23062D56' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+  .chip input:focus-visible + span{box-shadow:0 0 0 4px var(--gold-soft)}
+  .outro-campo{margin-top:10px;display:none}
+  .outro-campo.aberto{display:block}
+
+  /* Foto */
+  .foto-zona{display:flex;gap:18px;align-items:center;border:1.5px dashed #CFC6B3;border-radius:14px;padding:16px;
+    background:var(--field);cursor:pointer;transition:border-color .15s,background .15s}
+  .foto-zona:hover,.foto-zona.arrastando{border-color:var(--navy);background:#fff}
+  .foto-previa{width:104px;height:130px;border-radius:12px;flex:none;display:grid;place-items:center;color:#9C9483;
+    background:#EDE7DA center/cover no-repeat;border:1px solid var(--line)}
+  .foto-previa svg{width:34px;height:34px}
+  .foto-previa.com-foto svg{display:none}
+  .foto-texto strong{display:block;color:var(--navy);font-weight:600;font-size:15px}
+  .foto-texto small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+  .botao-sec{display:inline-block;margin-top:10px;font:500 14px 'Poppins',sans-serif;color:var(--navy);background:#fff;
+    border:1.5px solid var(--navy);border-radius:999px;padding:7px 16px;cursor:pointer}
+  .dicas{list-style:none;padding:0;margin:14px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
+  .dicas li{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:flex-start}
+  .dicas li::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--gold);margin-top:7px;flex:none}
+  #foto{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+
+  /* Uniforme */
+  .modelagens{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .opcao-card{position:relative;cursor:pointer}
+  .opcao-card input{position:absolute;opacity:0;width:1px;height:1px}
+  .opcao-card .caixa{display:flex;gap:14px;align-items:center;padding:14px 16px;border:1.5px solid var(--line);border-radius:14px;
+    background:var(--field);transition:all .15s;height:100%}
+  .opcao-card svg{width:46px;height:46px;flex:none;color:var(--navy)}
+  .opcao-card strong{display:block;font-weight:600;color:var(--ink)}
+  .opcao-card small{display:block;font-size:12.5px;color:var(--muted);line-height:1.4}
+  .opcao-card:hover .caixa{border-color:#C7BEAA}
+  .opcao-card input:checked + .caixa{border-color:var(--navy);background:#fff;box-shadow:0 0 0 3px var(--gold-soft)}
+  .opcao-card input:checked + .caixa svg{color:var(--gold-2)}
+  .opcao-card input:focus-visible + .caixa{box-shadow:0 0 0 4px var(--gold-soft)}
+
+  .tamanhos{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+  .tam{position:relative;cursor:pointer}
+  .tam input{position:absolute;opacity:0;width:1px;height:1px}
+  .tam span{display:flex;align-items:center;justify-content:center;height:56px;border:1.5px solid var(--line);border-radius:12px;
+    font-weight:600;font-size:16px;background:var(--field);color:var(--navy);transition:all .15s;user-select:none}
+  .tam:hover span{border-color:#C7BEAA}
+  .tam input:checked + span{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 0 0 3px var(--gold-soft)}
+  .tam input:focus-visible + span{box-shadow:0 0 0 4px var(--gold-soft)}
+
+  /* Autorizações */
+  .aceite{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;
+    background:var(--field);cursor:pointer;transition:all .15s}
+  .aceite + .aceite{margin-top:10px}
+  .aceite input{position:absolute;opacity:0;width:1px;height:1px}
+  .aceite .marca-box{width:22px;height:22px;border-radius:6px;border:2px solid #B9B2A3;flex:none;margin-top:2px;transition:all .15s;
+    background-position:center;background-repeat:no-repeat;background-size:14px}
+  .aceite input:checked ~ .marca-box{border-color:var(--navy);background-color:var(--navy);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M1 5l3.5 3.5L11 1.5' fill='none' stroke='%23C89C36' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+  .aceite input:focus-visible ~ .marca-box{box-shadow:0 0 0 4px var(--gold-soft)}
+  .aceite .texto{font-size:14px;color:#2D3644}
+  .aceite .texto b{color:var(--navy);font-weight:600}
+  .aceite:has(input:checked){border-color:#C9D3E0;background:#fff}
+
+  /* Envio */
+  .envio{text-align:center}
+  .alerta{display:none;text-align:left;background:var(--erro-soft);color:var(--erro);border-radius:12px;padding:12px 14px;
+    font-size:14px;margin-bottom:14px}
+  .alerta.visivel{display:block}
+  .enviar{width:100%;max-width:360px;padding:16px 20px;border:0;border-radius:12px;background:var(--gold);color:var(--navy);
+    font:600 16px 'Poppins',sans-serif;cursor:pointer;box-shadow:0 8px 20px rgba(200,156,54,.35);transition:transform .1s,background .15s;
+    display:inline-flex;align-items:center;justify-content:center;gap:10px}
+  .enviar:hover{background:#D4A940}
+  .enviar:active{transform:translateY(1px)}
+  .enviar:disabled{opacity:.75;cursor:wait}
+  .giro{width:18px;height:18px;border:2.5px solid rgba(6,45,86,.25);border-top-color:var(--navy);border-radius:50%;
+    animation:gira .8s linear infinite;display:none}
+  .enviando .giro{display:inline-block}
+  @keyframes gira{to{transform:rotate(360deg)}}
+  .envio small{display:block;color:var(--muted);font-size:12.5px;margin-top:12px}
+
+  /* Sucesso */
+  .sucesso{display:none;text-align:center;padding:40px 28px}
+  .sucesso.visivel{display:block}
+  .sucesso .icone{width:72px;height:72px;border-radius:50%;background:var(--gold-soft);display:grid;place-items:center;margin:0 auto 18px}
+  .sucesso .icone svg{width:36px;height:36px;color:var(--gold-2)}
+  .sucesso h2{color:var(--navy);font-size:24px;margin:0 0 10px;font-weight:600}
+  .sucesso p{color:#38414E;margin:0 auto 10px;max-width:460px}
+
+  .rodape{text-align:center;color:var(--muted);font-size:12.5px;margin-top:28px}
+  .rodape b{color:var(--navy);font-weight:600}
+
+  @media (max-width:560px){
+    .coluna{padding:28px 12px 44px}
+    .capa-corpo{padding:22px 20px 20px}
+    h1{font-size:24px}
+    .cartao{padding:18px 18px}
+    .secao-cab{padding:16px 18px}
+    .tamanhos{grid-template-columns:repeat(3,1fr)}
+    .modelagens{grid-template-columns:1fr}
+    .dicas{grid-template-columns:1fr}
+    .foto-zona{align-items:flex-start}
+    .foto-previa{width:88px;height:110px}
+  }
+</style>
+</head>
+<body>
+<div class="progresso" aria-hidden="true"><div class="progresso-barra" id="barra"></div></div>
+<div class="faixa" aria-hidden="true"></div>
+
+<main class="coluna">
+
+  <header class="cartao capa">
+    <div class="capa-topo"></div>
+    <div class="capa-corpo">
+      <img class="logo" src="logo.png" alt="Índigo Rei" width="760" height="193">
+      <h1>Cadastro da Equipe</h1>
+      <p>Estamos montando o banco de informações da nossa equipe e uma publicação para apresentar cada profissional às famílias e nas nossas redes, com foto e qualificações.</p>
+      <p>Aproveitamos para coletar o tamanho da sua camisa para a produção do uniforme.</p>
+      <div class="meta">
+        <span class="selo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Cerca de 10 minutos</span>
+        <span class="selo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Tenha uma foto sua à mão</span>
+      </div>
+      <p class="legenda-obrig">* Indica pergunta obrigatória</p>
+    </div>
+  </header>
+
+  <form id="form" novalidate>
+
+    <!-- 1. Identificação -->
+    <section class="secao">
+      <div class="cartao secao-cab">
+        <div class="secao-num">1</div>
+        <div><h2>Quem é você</h2><p>Dados de identificação e contato. O contato fica só para uso interno.</p></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="nomeCompleto">
+        <label class="rotulo" for="nomeCompleto">Nome completo<span class="obrig">*</span></label>
+        <p class="ajuda">Como está no seu documento.</p>
+        <input type="text" id="nomeCompleto" name="nomeCompleto" autocomplete="name" maxlength="150">
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="nomeProfissional">
+        <label class="rotulo" for="nomeProfissional">Como você quer aparecer na publicação<span class="obrig">*</span></label>
+        <p class="ajuda">Exatamente como deve sair no post. Ex.: Prof.ª Ana Souza, Psicóloga Marina Lima.</p>
+        <input type="text" id="nomeProfissional" name="nomeProfissional" maxlength="120">
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="funcoes">
+        <span class="rotulo">Sua função na Índigo<span class="obrig">*</span></span>
+        <p class="ajuda">Marque todas que se aplicam.</p>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" name="funcoes" value="Professor(a)"><span>Professor(a)</span></label>
+          <label class="chip"><input type="checkbox" name="funcoes" value="Psicólogo(a)"><span>Psicólogo(a)</span></label>
+          <label class="chip"><input type="checkbox" name="funcoes" value="Psicopedagogo(a)"><span>Psicopedagogo(a)</span></label>
+          <label class="chip"><input type="checkbox" name="funcoes" value="Neuropsicopedagogo(a)"><span>Neuropsicopedagogo(a)</span></label>
+          <label class="chip"><input type="checkbox" name="funcoes" value="Mentor(a) de estudos"><span>Mentor(a) de estudos</span></label>
+          <label class="chip"><input type="checkbox" name="funcoes" value="Equipe do Contraturno"><span>Equipe do Contraturno</span></label>
+          <label class="chip"><input type="checkbox" name="funcoes" value="Estagiário(a)"><span>Estagiário(a)</span></label>
+          <label class="chip"><input type="checkbox" name="funcoes" value="Coordenação"><span>Coordenação</span></label>
+          <label class="chip"><input type="checkbox" name="funcoes" value="Outro" data-outro="funcoesOutro"><span>Outra</span></label>
+        </div>
+        <div class="outro-campo" id="funcoesOutro-caixa">
+          <input type="text" id="funcoesOutro" name="funcoesOutro" placeholder="Qual?" maxlength="80">
+        </div>
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="whatsapp">
+        <label class="rotulo" for="whatsapp">WhatsApp<span class="obrig">*</span></label>
+        <input type="tel" id="whatsapp" name="whatsapp" inputmode="tel" autocomplete="tel" placeholder="(61) 9 0000-0000" maxlength="20">
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="email">
+        <label class="rotulo" for="email">E-mail<span class="obrig">*</span></label>
+        <p class="ajuda">Se precisar corrigir algo depois, é só enviar de novo com este mesmo e-mail.</p>
+        <input type="email" id="email" name="email" inputmode="email" autocomplete="email" placeholder="seuemail@exemplo.com" maxlength="150">
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="instagram">
+        <label class="rotulo" for="instagram">Instagram profissional</label>
+        <p class="ajuda">Só se for um perfil profissional e você quiser que ele apareça na divulgação.</p>
+        <input type="text" id="instagram" name="instagram" placeholder="@seuperfil" maxlength="80" autocapitalize="off">
+      </div>
+
+      <div class="cartao pergunta" data-campo="aniversario">
+        <span class="rotulo">Aniversário</span>
+        <p class="ajuda">Para comemorarmos com a equipe. Não precisa do ano.</p>
+        <div class="linha2">
+          <select id="aniversarioDia" name="aniversarioDia" aria-label="Dia"><option value="">Dia</option></select>
+          <select id="aniversarioMes" name="aniversarioMes" aria-label="Mês"><option value="">Mês</option></select>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Formação -->
+    <section class="secao">
+      <div class="cartao secao-cab">
+        <div class="secao-num">2</div>
+        <div><h2>Formação e qualificações</h2><p>Base do banco de informações e do que vai na publicação.</p></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="graduacao">
+        <label class="rotulo" for="graduacao">Graduação<span class="obrig">*</span></label>
+        <p class="ajuda">Curso, instituição e ano de conclusão (ou "em andamento").</p>
+        <textarea id="graduacao" name="graduacao" class="curto" maxlength="400" placeholder="Ex.: Pedagogia, UnB, 2018"></textarea>
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="posGraduacao">
+        <label class="rotulo" for="posGraduacao">Pós-graduação, especialização, mestrado ou doutorado</label>
+        <p class="ajuda">Uma por linha: curso, instituição e ano.</p>
+        <textarea id="posGraduacao" name="posGraduacao" maxlength="1500" data-contador></textarea>
+        <div class="contador"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="registro">
+        <label class="rotulo" for="registro">Registro profissional<span class="obrig obrig-psi">*</span></label>
+        <p class="ajuda">Ex.: CRP 01/12345. Para psicólogas e psicólogos é obrigatório: o Conselho exige o CRP em toda divulgação.</p>
+        <input type="text" id="registro" name="registro" maxlength="80">
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="cursos">
+        <label class="rotulo" for="cursos">Cursos, certificações e formações complementares</label>
+        <p class="ajuda">Os que mais se relacionam com o seu trabalho na Índigo.</p>
+        <textarea id="cursos" name="cursos" maxlength="1500" data-contador></textarea>
+        <div class="contador"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="experiencia">
+        <label class="rotulo" for="experiencia">Tempo de experiência na área<span class="obrig">*</span></label>
+        <select id="experiencia" name="experiencia">
+          <option value="">Selecione</option>
+          <option>Menos de 1 ano</option>
+          <option>1 a 3 anos</option>
+          <option>3 a 5 anos</option>
+          <option>5 a 10 anos</option>
+          <option>Mais de 10 anos</option>
+        </select>
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="areas">
+        <span class="rotulo">Áreas de atuação<span class="obrig">*</span></span>
+        <p class="ajuda">Marque todas em que você atua ou tem formação.</p>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" name="areas" value="Alfabetização e letramento"><span>Alfabetização e letramento</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Português"><span>Português</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Matemática"><span>Matemática</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Inglês"><span>Inglês</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Ciências"><span>Ciências</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="História e Geografia"><span>História e Geografia</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Mentoria de estudos"><span>Mentoria de estudos</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Intervenção pedagógica"><span>Intervenção pedagógica</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Enriquecimento"><span>Enriquecimento</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Altas habilidades e superdotação"><span>Altas habilidades e superdotação</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="TDAH, TEA e dislexia"><span>TDAH, TEA e dislexia</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Avaliação de aprendizagem"><span>Avaliação de aprendizagem</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Psicoterapia infantil"><span>Psicoterapia infantil</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Psicoterapia de adolescentes"><span>Psicoterapia de adolescentes</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Orientação parental"><span>Orientação parental</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Educação infantil e atividades lúdicas"><span>Educação infantil e atividades lúdicas</span></label>
+          <label class="chip"><input type="checkbox" name="areas" value="Outro" data-outro="areasOutro"><span>Outra</span></label>
+        </div>
+        <div class="outro-campo" id="areasOutro-caixa">
+          <input type="text" id="areasOutro" name="areasOutro" placeholder="Qual?" maxlength="80">
+        </div>
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="etapas">
+        <span class="rotulo">Etapas que você atende</span>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" name="etapas" value="Educação Infantil"><span>Educação Infantil</span></label>
+          <label class="chip"><input type="checkbox" name="etapas" value="Fundamental I"><span>Fundamental I (1º ao 5º)</span></label>
+          <label class="chip"><input type="checkbox" name="etapas" value="Fundamental II"><span>Fundamental II (6º ao 9º)</span></label>
+          <label class="chip"><input type="checkbox" name="etapas" value="Ensino Médio"><span>Ensino Médio</span></label>
+          <label class="chip"><input type="checkbox" name="etapas" value="Adultos"><span>Adultos</span></label>
+        </div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="idiomas">
+        <label class="rotulo" for="idiomas">Idiomas</label>
+        <p class="ajuda">Além do português, com o nível. Ex.: Inglês fluente, Espanhol intermediário.</p>
+        <input type="text" id="idiomas" name="idiomas" maxlength="150">
+      </div>
+    </section>
+
+    <!-- 3. Publicação -->
+    <section class="secao">
+      <div class="cartao secao-cab">
+        <div class="secao-num">3</div>
+        <div><h2>Para a publicação</h2><p>O que vai aparecer no post de apresentação e no banco da equipe.</p></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="foto">
+        <span class="rotulo">Sua foto<span class="obrig">*</span></span>
+        <p class="ajuda">Ela vai na publicação. Escolha uma em que você se reconheça e goste.</p>
+        <label class="foto-zona" id="fotoZona" for="foto">
+          <div class="foto-previa" id="fotoPrevia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>
+          </div>
+          <div class="foto-texto">
+            <strong id="fotoTitulo">Escolher foto</strong>
+            <small id="fotoSub">JPG ou PNG, do celular ou do computador.</small>
+            <span class="botao-sec" id="fotoBotao">Selecionar arquivo</span>
+          </div>
+        </label>
+        <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*">
+        <ul class="dicas">
+          <li>Recente, do peito para cima</li>
+          <li>Rosto bem iluminado, de frente para a luz</li>
+          <li>Fundo neutro, sem outras pessoas</li>
+          <li>Sem filtro e sem óculos escuros</li>
+        </ul>
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="bioCurta">
+        <label class="rotulo" for="bioCurta">Mini bio para a divulgação<span class="obrig">*</span></label>
+        <p class="ajuda">Duas ou três frases em 3ª pessoa, como vai aparecer no post. Ex.: Pedagoga há 8 anos, especialista em alfabetização, transforma a leitura em descoberta para cada criança.</p>
+        <textarea id="bioCurta" name="bioCurta" maxlength="300" data-contador></textarea>
+        <div class="contador"></div>
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="apresentacao">
+        <label class="rotulo" for="apresentacao">Apresentação completa</label>
+        <p class="ajuda">Para o nosso banco interno e para apresentar você às famílias: sua trajetória, sua forma de trabalhar e o que você mais gosta no que faz.</p>
+        <textarea id="apresentacao" name="apresentacao" maxlength="1500" data-contador style="min-height:140px"></textarea>
+        <div class="contador"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="frase">
+        <label class="rotulo" for="frase">Uma frase que define o seu trabalho</label>
+        <p class="ajuda">Pode virar destaque no post.</p>
+        <input type="text" id="frase" name="frase" maxlength="120" data-contador>
+        <div class="contador"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="curiosidade">
+        <label class="rotulo" for="curiosidade">Uma curiosidade ou hobby</label>
+        <p class="ajuda">Algo que as crianças adorariam saber sobre você.</p>
+        <input type="text" id="curiosidade" name="curiosidade" maxlength="150">
+      </div>
+    </section>
+
+    <!-- 4. Uniforme -->
+    <section class="secao">
+      <div class="cartao secao-cab">
+        <div class="secao-num">4</div>
+        <div><h2>Uniforme</h2><p>Para a produção das camisas da equipe.</p></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="modelagem">
+        <span class="rotulo">Modelagem da camisa<span class="obrig">*</span></span>
+        <div class="modelagens">
+          <label class="opcao-card"><input type="radio" name="modelagem" value="Tradicional">
+            <span class="caixa">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M22 8 14 12 4 22l7 8 5-4v32h32V26l5 4 7-8-10-10-8-4c-2 5-6 7-10 7s-8-2-10-7Z"/></svg>
+              <span><strong>Tradicional</strong><small>Corte reto, mais solto</small></span>
+            </span>
+          </label>
+          <label class="opcao-card"><input type="radio" name="modelagem" value="Baby look">
+            <span class="caixa">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M23 9 16 12l-8 8 5 6 5-3c-1 9 2 15 0 23-1 5 0 9 0 12h28c0-3 1-7 0-12-2-8 1-14 0-23l5 3 5-6-8-8-7-3c-2 4-5 6-9 6s-7-2-9-6Z"/></svg>
+              <span><strong>Baby look</strong><small>Corte acinturado, mais ajustado</small></span>
+            </span>
+          </label>
+        </div>
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="tamanho">
+        <span class="rotulo">Tamanho<span class="obrig">*</span></span>
+        <p class="ajuda">Na dúvida entre dois, escolha o maior.</p>
+        <div class="tamanhos">
+          <label class="tam"><input type="radio" name="tamanho" value="PP"><span>PP</span></label>
+          <label class="tam"><input type="radio" name="tamanho" value="P"><span>P</span></label>
+          <label class="tam"><input type="radio" name="tamanho" value="M"><span>M</span></label>
+          <label class="tam"><input type="radio" name="tamanho" value="G"><span>G</span></label>
+          <label class="tam"><input type="radio" name="tamanho" value="GG"><span>GG</span></label>
+          <label class="tam"><input type="radio" name="tamanho" value="XGG"><span>XGG</span></label>
+        </div>
+        <div class="erro-msg"></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="obsUniforme">
+        <label class="rotulo" for="obsUniforme">Alguma observação sobre o uniforme?</label>
+        <input type="text" id="obsUniforme" name="obsUniforme" maxlength="300" placeholder="Opcional">
+      </div>
+    </section>
+
+    <!-- 5. Autorização -->
+    <section class="secao">
+      <div class="cartao secao-cab">
+        <div class="secao-num">5</div>
+        <div><h2>Autorização</h2><p>Necessária para publicarmos sua foto e suas informações.</p></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="consentimento">
+        <label class="aceite">
+          <input type="checkbox" name="autorizaImagem" id="autorizaImagem">
+          <span class="marca-box"></span>
+          <span class="texto"><b>Autorizo o Instituto Índigo Rei</b> a usar, sem custo, meu nome, minha foto e as informações profissionais deste formulário para apresentar a equipe em publicações institucionais: redes sociais, site, materiais impressos e comunicação com as famílias. A autorização vale enquanto eu fizer parte da equipe e posso revogá-la a qualquer momento pelo e-mail institutoindigorei@gmail.com, valendo a revogação para usos futuros.<span class="obrig">*</span></span>
+        </label>
+        <label class="aceite">
+          <input type="checkbox" name="declaracao" id="declaracao">
+          <span class="marca-box"></span>
+          <span class="texto"><b>Declaro que as informações são verdadeiras.</b> Entendo que WhatsApp, e-mail, aniversário e tamanho de camisa são de uso interno e não serão publicados.<span class="obrig">*</span></span>
+        </label>
+        <div class="erro-msg"></div>
+      </div>
+    </section>
+
+    <div class="cartao envio">
+      <div class="alerta" id="alerta" role="alert"></div>
+      <button type="submit" class="enviar" id="enviar"><span class="giro"></span><span id="enviarTexto">Enviar cadastro</span></button>
+      <small id="avisoEnvio">Suas respostas vão direto para a coordenação da Índigo Rei.</small>
+    </div>
+  </form>
+
+  <div class="cartao sucesso" id="sucesso" role="status">
+    <div class="icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <h2 id="sucessoTitulo">Cadastro enviado!</h2>
+    <p id="sucessoTexto">Suas informações chegaram para a coordenação. Obrigado por fazer parte da Índigo Rei.</p>
+    <p style="font-size:13.5px;color:var(--muted)">Precisa corrigir alguma coisa? Envie de novo com o mesmo e-mail: a resposta nova substitui a anterior.</p>
+    <button type="button" class="botao-sec" id="corrigir">Voltar e corrigir</button>
+  </div>
+
+  <footer class="rodape">
+    <b>Instituto Índigo Rei</b><br>Educação para crianças únicas · @indigo.rei
+  </footer>
+</main>
+
+<script>
+var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHjVL6W68U_kz6IrPcBprXcYJm61GaOa8Y-ePnDD8Wjdo4-gzY/exec';
+
+(function () {
+  var form = document.getElementById('form');
+  var emEnvio = false;
+  window.addEventListener('beforeunload', function (e) {
+    if (!emEnvio) return;
+    e.preventDefault(); e.returnValue = '';
+  });
+  var CHAVE_RASCUNHO = 'indigo-cadastro-equipe-v1';
+  var foto = null;
+  // Erros só aparecem depois da primeira tentativa de envio; a partir daí, somem e aparecem enquanto a pessoa preenche.
+  // (Mostrar erro ao sair do campo desloca a página e faz o clique seguinte cair no lugar errado.)
+  var tentouEnviar = false;
+  var ICONE_ERRO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>';
+
+  /* ---------- auxiliares ---------- */
+  function el(id) { return document.getElementById(id); }
+  function val(nome) { var e = form.elements[nome]; return e ? String(e.value || '').trim() : ''; }
+  function marcados(nome) {
+    return Array.prototype.slice.call(form.querySelectorAll('input[name="' + nome + '"]:checked')).map(function (i) { return i.value; });
+  }
+  function radio(nome) { var r = form.querySelector('input[name="' + nome + '"]:checked'); return r ? r.value : ''; }
+  function chk(id) { return el(id).checked; }
+  function comOutro(nome, campoOutro) {
+    return marcados(nome).map(function (v) { return v === 'Outro' ? 'Outro: ' + val(campoOutro) : v; });
+  }
+  function outroOk(nome, campoOutro) { return marcados(nome).indexOf('Outro') < 0 || !!val(campoOutro); }
+
+  /* ---------- aniversário ---------- */
+  var dia = el('aniversarioDia'), mes = el('aniversarioMes');
+  for (var d = 1; d <= 31; d++) { var o = document.createElement('option'); o.value = (d < 10 ? '0' : '') + d; o.textContent = d; dia.appendChild(o); }
+  ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'].forEach(function (m, i) {
+    var o = document.createElement('option'); o.value = (i < 9 ? '0' : '') + (i + 1); o.textContent = m; mes.appendChild(o);
+  });
+
+  /* ---------- "Outra" abre campo ---------- */
+  function atualizarOutros() {
+    form.querySelectorAll('[data-outro]').forEach(function (cb) {
+      el(cb.getAttribute('data-outro') + '-caixa').classList.toggle('aberto', cb.checked);
+    });
+    document.body.classList.toggle('psi', marcados('funcoes').indexOf('Psicólogo(a)') >= 0);
+  }
+
+  /* ---------- contadores ---------- */
+  function atualizarContadores() {
+    form.querySelectorAll('[data-contador]').forEach(function (c) {
+      var cont = c.parentNode.querySelector('.contador');
+      if (!cont) return;
+      var max = parseInt(c.getAttribute('maxlength'), 10), n = c.value.length;
+      cont.textContent = n + ' / ' + max;
+      cont.classList.toggle('perto', n >= max * 0.85 && n < max);
+      cont.classList.toggle('cheio', n >= max);
+    });
+  }
+
+  /* ---------- máscaras leves ---------- */
+  el('whatsapp').addEventListener('input', function (e) {
+    var v = e.target.value;
+    if (/^\s*\+/.test(v)) return;
+    var n = v.replace(/\D/g, '').slice(0, 11);
+    var f = n;
+    if (n.length > 2) f = '(' + n.slice(0, 2) + ') ' + n.slice(2);
+    if (n.length > 7) f = '(' + n.slice(0, 2) + ') ' + n.slice(2, n.length - 4) + '-' + n.slice(n.length - 4);
+    e.target.value = f;
+  });
+  el('instagram').addEventListener('blur', function (e) {
+    var v = e.target.value.trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/.*$/, '');
+    if (v && v.charAt(0) !== '@') v = '@' + v;
+    e.target.value = v;
+  });
+
+  /* ---------- foto ---------- */
+  var inputFoto = el('foto'), zona = el('fotoZona');
+  function processarFoto(arquivo) {
+    return new Promise(function (ok, falha) {
+      if (!arquivo) return falha(new Error('Nenhum arquivo escolhido.'));
+      if (arquivo.size > 40 * 1024 * 1024) return falha(new Error('Arquivo muito grande. Escolha uma foto de até 40 MB.'));
+      var url = URL.createObjectURL(arquivo);
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        URL.revokeObjectURL(url);
+        if (Math.min(w, h) < 400) return falha(new Error('Essa foto está pequena demais para publicação. Envie uma com mais qualidade.'));
+        var max = 2400, esc = Math.min(1, max / Math.max(w, h));
+        var cw = Math.round(w * esc), ch = Math.round(h * esc);
+        var c = document.createElement('canvas'); c.width = cw; c.height = ch;
+        var ctx = c.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cw, ch);
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, cw, ch);
+        var dataUrl = c.toDataURL('image/jpeg', 0.92);
+        ok({ base64: dataUrl.split(',')[1], tipo: 'image/jpeg', previa: dataUrl, nome: arquivo.name });
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        falha(new Error('Não consegui abrir essa imagem. Se for do iPhone (HEIC), envie em JPG ou mande um print da foto.'));
+      };
+      img.src = url;
+    });
+  }
+  function receberArquivo(arquivo) {
+    el('fotoTitulo').textContent = 'Preparando a foto...';
+    processarFoto(arquivo).then(function (f) {
+      foto = f;
+      var p = el('fotoPrevia');
+      p.style.backgroundImage = 'url(' + f.previa + ')';
+      p.classList.add('com-foto');
+      el('fotoTitulo').textContent = 'Foto escolhida';
+      el('fotoSub').textContent = f.nome;
+      el('fotoBotao').textContent = 'Trocar foto';
+      mostrarErro('foto', ''); validar();
+    }).catch(function (e) {
+      el('fotoTitulo').textContent = foto ? 'Foto escolhida' : 'Escolher foto';
+      mostrarErro('foto', e.message);
+    });
+  }
+  inputFoto.addEventListener('change', function () { if (inputFoto.files[0]) receberArquivo(inputFoto.files[0]); inputFoto.value = ''; });
+  ['dragenter', 'dragover'].forEach(function (ev) { zona.addEventListener(ev, function (e) { e.preventDefault(); zona.classList.add('arrastando'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { zona.addEventListener(ev, function (e) { e.preventDefault(); zona.classList.remove('arrastando'); }); });
+  zona.addEventListener('drop', function (e) { var f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) receberArquivo(f); });
+
+  /* ---------- validação ---------- */
+  var regras = [
+    { campo: 'nomeCompleto', ok: function () { return val('nomeCompleto').split(/\s+/).filter(Boolean).length >= 2; }, msg: 'Escreva nome e sobrenome.' },
+    { campo: 'nomeProfissional', ok: function () { return !!val('nomeProfissional'); }, msg: 'Diga como você quer aparecer na publicação.' },
+    { campo: 'funcoes', ok: function () { return marcados('funcoes').length > 0 && outroOk('funcoes', 'funcoesOutro'); }, msg: 'Marque ao menos uma função (e escreva qual, se marcou "Outra").' },
+    { campo: 'whatsapp', ok: function () { return val('whatsapp').replace(/\D/g, '').length >= 10; }, msg: 'Informe o WhatsApp com DDD.' },
+    { campo: 'email', ok: function () { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email')); }, msg: 'Confira o e-mail.' },
+    { campo: 'graduacao', ok: function () { return val('graduacao').length >= 3; }, msg: 'Informe sua graduação.' },
+    { campo: 'registro', ok: function () { return marcados('funcoes').indexOf('Psicólogo(a)') < 0 || !!val('registro'); }, msg: 'Informe o seu CRP.' },
+    { campo: 'experiencia', ok: function () { return !!val('experiencia'); }, msg: 'Escolha uma opção.' },
+    { campo: 'areas', ok: function () { return marcados('areas').length > 0 && outroOk('areas', 'areasOutro'); }, msg: 'Marque ao menos uma área (e escreva qual, se marcou "Outra").' },
+    { campo: 'foto', ok: function () { return !!foto; }, msg: 'Envie uma foto sua.' },
+    { campo: 'bioCurta', ok: function () { return val('bioCurta').length >= 40; }, msg: 'Escreva pelo menos uma frase completa (mínimo de 40 caracteres).' },
+    { campo: 'modelagem', ok: function () { return !!radio('modelagem'); }, msg: 'Escolha a modelagem.' },
+    { campo: 'tamanho', ok: function () { return !!radio('tamanho'); }, msg: 'Escolha o tamanho.' },
+    { campo: 'consentimento', ok: function () { return chk('autorizaImagem') && chk('declaracao'); }, msg: 'Marque as duas confirmações para enviar.' }
+  ];
+
+  function cartao(campo) { return form.querySelector('[data-campo="' + campo + '"]'); }
+  function mostrarErro(campo, msg) {
+    var c = cartao(campo); if (!c) return;
+    var m = c.querySelector('.erro-msg');
+    if (msg) { m.innerHTML = ICONE_ERRO; var s = document.createElement('span'); s.textContent = msg; m.appendChild(s); }
+    c.classList.toggle('tem-erro', !!msg);
+  }
+  function validar() {
+    var erros = [], okCount = 0;
+    regras.forEach(function (r) {
+      var ok = r.ok();
+      if (ok) okCount++; else erros.push(r);
+      if (tentouEnviar) mostrarErro(r.campo, ok ? '' : r.msg);
+    });
+    el('barra').style.width = Math.round(okCount / regras.length * 100) + '%';
+    return erros;
+  }
+
+  form.addEventListener('change', function () { atualizarOutros(); validar(); salvarRascunho(); });
+  form.addEventListener('input', function () { atualizarContadores(); validar(); salvarRascunho(); });
+
+  /* ---------- rascunho (não inclui foto nem autorizações) ---------- */
+  function salvarRascunho() {
+    try {
+      var d = {};
+      Array.prototype.forEach.call(form.elements, function (e) {
+        if (!e.name || e.type === 'file' || e.name === 'autorizaImagem' || e.name === 'declaracao') return;
+        if (e.type === 'checkbox') { d[e.name] = d[e.name] || []; if (e.checked) d[e.name].push(e.value); }
+        else if (e.type === 'radio') { if (e.checked) d[e.name] = e.value; }
+        else d[e.name] = e.value;
+      });
+      window.localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(d));
+    } catch (err) {}
+  }
+  function restaurarRascunho() {
+    try {
+      var d = JSON.parse(window.localStorage.getItem(CHAVE_RASCUNHO) || 'null');
+      if (!d) return;
+      Array.prototype.forEach.call(form.elements, function (e) {
+        if (!e.name || !(e.name in d) || e.type === 'file') return;
+        if (e.type === 'checkbox') e.checked = (d[e.name] || []).indexOf(e.value) >= 0;
+        else if (e.type === 'radio') e.checked = d[e.name] === e.value;
+        else e.value = d[e.name];
+      });
+    } catch (err) {}
+  }
+  function limparRascunho() { try { window.localStorage.removeItem(CHAVE_RASCUNHO); } catch (err) {} }
+
+  /* ---------- envio ---------- */
+  function coletar() {
+    var dd = val('aniversarioDia'), mm = val('aniversarioMes');
+    return {
+      nomeCompleto: val('nomeCompleto'),
+      nomeProfissional: val('nomeProfissional'),
+      funcoes: comOutro('funcoes', 'funcoesOutro'),
+      whatsapp: val('whatsapp'),
+      email: val('email'),
+      instagram: val('instagram'),
+      aniversario: dd && mm ? dd + '/' + mm : '',
+      graduacao: val('graduacao'),
+      posGraduacao: val('posGraduacao'),
+      registro: val('registro'),
+      cursos: val('cursos'),
+      experiencia: val('experiencia'),
+      areas: comOutro('areas', 'areasOutro'),
+      etapas: marcados('etapas'),
+      idiomas: val('idiomas'),
+      bioCurta: val('bioCurta'),
+      apresentacao: val('apresentacao'),
+      frase: val('frase'),
+      curiosidade: val('curiosidade'),
+      modelagem: radio('modelagem'),
+      tamanho: radio('tamanho'),
+      obsUniforme: val('obsUniforme'),
+      autorizaImagem: chk('autorizaImagem'),
+      declaracao: chk('declaracao'),
+      foto: foto ? { base64: foto.base64, tipo: foto.tipo } : null
+    };
+  }
+  function enviando(sim) {
+    var b = el('enviar');
+    emEnvio = sim;
+    b.disabled = sim; b.classList.toggle('enviando', sim);
+    el('enviarTexto').textContent = sim ? 'Enviando a foto e as respostas...' : 'Enviar cadastro';
+    el('avisoEnvio').textContent = sim ? 'Não feche esta página até aparecer a confirmação.' : 'Suas respostas vão direto para a coordenação da Índigo Rei.';
+  }
+  function alerta(msg) { var a = el('alerta'); a.textContent = msg || ''; a.classList.toggle('visivel', !!msg); }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    alerta('');
+    tentouEnviar = true;
+    var erros = validar();
+    if (erros.length) {
+      alerta(erros.length === 1 ? 'Falta 1 resposta. Ela está marcada em vermelho acima.' : 'Faltam ' + erros.length + ' respostas. Elas estão marcadas em vermelho acima.');
+      var c = cartao(erros[0].campo);
+      c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var f = c.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea');
+      if (f) setTimeout(function () { f.focus({ preventScroll: true }); }, 400);
+      return;
+    }
+    if (!/^https:\/\/script\.google\.com\//.test(URL_SERVIDOR)) {
+      alerta('O formulário ainda não está ligado ao servidor. Avise a coordenação da Índigo Rei.');
+      return;
+    }
+    enviando(true);
+    fetch(URL_SERVIDOR, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(coletar()),
+      credentials: 'omit',
+      redirect: 'follow'
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        enviando(false);
+        if (!res || !res.ok) { var e1 = new Error(res && res.erro ? res.erro : ''); e1.doServidor = true; throw e1; }
+        limparRascunho();
+        var nome = res.primeiroNome || '';
+        el('sucessoTitulo').textContent = res.atualizado ? 'Cadastro atualizado!' : 'Cadastro enviado!';
+        el('sucessoTexto').textContent = (nome ? 'Obrigado, ' + nome + '! ' : 'Obrigado! ') +
+          'Suas informações chegaram para a coordenação. Que bom ter você na Índigo Rei.';
+        form.style.display = 'none';
+        el('sucesso').classList.add('visivel');
+        el('barra').style.width = '100%';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      })
+      .catch(function (err) {
+        enviando(false);
+        var msg = String(err && err.message ? err.message : err || '').replace(/^(Exception|Error|Erro):\s*/i, '');
+        if (!(err && err.doServidor) || !msg) msg = 'Verifique sua internet e tente de novo. Se continuar, tente pelo celular ou fale com a coordenação.';
+        alerta('Não foi possível enviar. ' + msg);
+      });
+  });
+
+  el('corrigir').addEventListener('click', function () {
+    el('sucesso').classList.remove('visivel');
+    form.style.display = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* ---------- início ---------- */
+  restaurarRascunho();
+  atualizarOutros();
+  atualizarContadores();
+  validar();
+  if (/^https:\/\/script\.google\.com\//.test(URL_SERVIDOR)) {
+    try { fetch(URL_SERVIDOR + '?acordar=1', { credentials: 'omit' }).catch(function () {}); } catch (e) {}
+  }
+})();
+</script>
+</body>
+</html>

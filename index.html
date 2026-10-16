@@ -86,7 +86,7 @@
   textarea{resize:vertical;min-height:100px;line-height:1.5}
   textarea.curto{min-height:70px}
   input::placeholder,textarea::placeholder{color:#A39C8E}
-  input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 4px var(--gold-soft);background:#fff}
+  input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 4px var(--gold-soft);background-color:#fff}
   .tem-erro input,.tem-erro select,.tem-erro textarea{border-color:#E3A29C}
   select{cursor:pointer;padding-right:42px;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23062D56' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -227,6 +227,26 @@
   @media (prefers-reduced-motion:reduce){
     *:active,*:active > span,*:active > .caixa{scale:none!important}
   }
+
+  /* celular: alvos de toque de 44px */
+  .chip span{min-height:44px}
+  .botao-sec{padding:10px 18px}
+  .foto-zona .botao-sec{padding:7px 16px}
+  .foto-texto{min-width:0}
+  .foto-texto small{overflow-wrap:anywhere}
+
+  /* foco visível pelo teclado e contraste do contador */
+  .chip input:focus-visible + span,.tam input:focus-visible + span,.opcao-card input:focus-visible + .caixa,.aceite input:focus-visible ~ .marca-box{outline:2px solid var(--navy);outline-offset:2px}
+  .contador.perto{color:#8A6514}
+
+  /* avisos */
+  .aviso-rascunho{background:var(--gold-soft);color:var(--navy);border-radius:12px;padding:12px 16px;font-size:14px;margin:0 0 4px}
+  .erro-msg{flex-wrap:wrap;align-items:flex-start}
+  .erro-msg svg{margin-top:2px}
+  .erro-msg span{flex:1 1 calc(100% - 22px);min-width:0;overflow-wrap:anywhere}
+  .erro-acao{font:600 13px 'Poppins',sans-serif;color:var(--navy);background:#fff;border:1.5px solid var(--navy);border-radius:999px;
+    min-height:44px;padding:0 16px;margin-left:22px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:scale .16s cubic-bezier(.23,1,.32,1)}
+  .erro-acao:active{scale:.96}
 </style>
 </head>
 <body>
@@ -251,6 +271,7 @@
   </header>
 
   <form id="form" novalidate>
+    <p class="aviso-rascunho" id="avisoRascunho" role="status" hidden>Recuperamos o que você já tinha preenchido neste aparelho. A foto e as duas autorizações precisam ser marcadas de novo.</p>
 
     <!-- 1. Identificação -->
     <section class="secao">
@@ -436,7 +457,7 @@
             <span class="botao-sec" id="fotoBotao">Selecionar arquivo</span>
           </div>
         </label>
-        <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*">
+        <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp,image/*">
         <ul class="dicas">
           <li>Recente, do peito para cima</li>
           <li>Rosto bem iluminado, de frente para a luz</li>
@@ -575,6 +596,8 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
   });
   var CHAVE_RASCUNHO = 'indigo-cadastro-equipe-v1';
   var foto = null;
+  var preparandoFoto = false;
+  var emailsMostrados = {}, emailsAvisados = {}; // e-mail com possível erro de digitação: aviso já mostrado / mantido pela pessoa
   // Erros só aparecem depois da primeira tentativa de envio; a partir daí, somem e aparecem enquanto a pessoa preenche.
   // (Mostrar erro ao sair do campo desloca a página e faz o clique seguinte cair no lugar errado.)
   var tentouEnviar = false;
@@ -592,6 +615,52 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
     return marcados(nome).map(function (v) { return v === 'Outro' ? 'Outro: ' + val(campoOutro) : v; });
   }
   function outroOk(nome, campoOutro) { return marcados(nome).indexOf('Outro') < 0 || !!val(campoOutro); }
+  function qa(raiz, sel) { return Array.prototype.slice.call(raiz.querySelectorAll(sel)); }
+
+  /* E-mail: erros de digitação comuns nos provedores grandes. Só sugere; se a pessoa mantiver e enviar de novo, vale o que ela escreveu. */
+  var PROVEDOR_TROCADO = { gmial: 'gmail', gmai: 'gmail', gamil: 'gmail', gmal: 'gmail', gmeil: 'gmail', gmil: 'gmail', gnail: 'gmail',
+    gmaill: 'gmail', gmali: 'gmail', gmsil: 'gmail', gemail: 'gmail', hotmal: 'hotmail', hotmial: 'hotmail', hotmil: 'hotmail',
+    hotnail: 'hotmail', hotamil: 'hotmail', homail: 'hotmail', hotmai: 'hotmail', hormail: 'hotmail', hotmaill: 'hotmail',
+    outlok: 'outlook', outloo: 'outlook', outllook: 'outlook', oulook: 'outlook', otlook: 'outlook', iclod: 'icloud', icoud: 'icloud',
+    iclould: 'icloud', yaho: 'yahoo', yahho: 'yahoo' };
+  var PROVEDORES = ['gmail', 'hotmail', 'outlook', 'icloud', 'yahoo', 'live', 'uol', 'bol', 'terra'];
+  var FINAL_TROCADO = ['con', 'cm', 'co', 'om', 'comm', 'cpm', 'vom', 'xom', 'cim', 'coom', 'cmo', 'ocm', 'c', 'cok', 'col'];
+  function emailOk(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+  function sugestaoEmail(s) {
+    s = String(s || '').trim();
+    var partes = s.split('@');
+    if (partes.length !== 2 || !partes[0] || /\s/.test(s)) return '';
+    var dominio = partes[1].toLowerCase(), limpo = dominio.replace(/[.,]+$/, '');
+    var m = limpo.match(/^([a-z0-9-]+)\.([a-z.]+)$/);
+    if (!m) return limpo !== dominio && emailOk(partes[0] + '@' + limpo) ? partes[0] + '@' + limpo : '';
+    var nome = m[1], fim = m[2];
+    var provedor = PROVEDOR_TROCADO[nome] || (PROVEDORES.indexOf(nome) >= 0 ? nome : '');
+    if (!provedor) return limpo !== dominio ? partes[0] + '@' + limpo : '';
+    var brasileiro = /^(uol|bol|terra)$/.test(provedor);
+    if (FINAL_TROCADO.indexOf(fim) >= 0) fim = brasileiro ? 'com.br' : 'com';
+    else if (/^(con|cm|co|cpm|vom|xom|om)\.br$/.test(fim) || /^com\.(b|vr|bt|bbr|brr|nr)$/.test(fim)) fim = 'com.br';
+    var novo = provedor + '.' + fim;
+    return novo !== dominio ? partes[0] + '@' + novo : '';
+  }
+  function mensagemEmail(s) {
+    s = String(s || '').trim();
+    if (!s) return 'Informe o e-mail.';
+    if (/\s/.test(s)) return 'Tire os espaços do e-mail.';
+    var arrobas = (s.match(/@/g) || []).length;
+    if (!arrobas) return 'Falta o @ no e-mail.';
+    if (arrobas > 1) return 'O e-mail tem mais de um @. Confira.';
+    var dominio = s.split('@')[1];
+    if (/,/.test(dominio)) return 'Troque a vírgula por ponto no e-mail.';
+    if (dominio.indexOf('.') < 0) return 'Falta o final do e-mail, como .com ou .com.br.';
+    return 'Confira o e-mail.';
+  }
+  function situacaoEmail() {
+    var v = val('email');
+    if (!emailOk(v)) return { ok: false, msg: mensagemEmail(v) };
+    var sug = sugestaoEmail(v);
+    if (!sug || emailsAvisados[v]) return { ok: true, msg: '' };
+    return { ok: false, msg: { texto: 'Confira o final do e-mail: você quis dizer ' + sug + '? Se estiver certo, é só enviar de novo.', sugestao: sug, id: 'email', avisoEmail: v } };
+  }
 
   /* ---------- aniversário ---------- */
   var dia = el('aniversarioDia'), mes = el('aniversarioMes');
@@ -667,7 +736,9 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
   }
   function receberArquivo(arquivo) {
     el('fotoTitulo').textContent = 'Preparando a foto...';
+    preparandoFoto = true;
     processarFoto(arquivo).then(function (f) {
+      preparandoFoto = false;
       foto = f;
       var p = el('fotoPrevia');
       p.style.backgroundImage = 'url(' + f.previa + ')';
@@ -677,6 +748,7 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
       el('fotoBotao').textContent = 'Trocar foto';
       mostrarErro('foto', ''); validar();
     }).catch(function (e) {
+      preparandoFoto = false;
       el('fotoTitulo').textContent = foto ? 'Foto escolhida' : 'Escolher foto';
       mostrarErro('foto', e.message);
     });
@@ -692,7 +764,7 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
     { campo: 'nomeProfissional', ok: function () { return !!val('nomeProfissional'); }, msg: 'Diga como você quer aparecer na publicação.' },
     { campo: 'funcoes', ok: function () { return marcados('funcoes').length > 0 && outroOk('funcoes', 'funcoesOutro'); }, msg: 'Marque ao menos uma função (e escreva qual, se marcou "Outra").' },
     { campo: 'whatsapp', ok: function () { return val('whatsapp').replace(/\D/g, '').length >= 10; }, msg: 'Informe o WhatsApp com DDD.' },
-    { campo: 'email', ok: function () { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('email')); }, msg: 'Confira o e-mail.' },
+    { campo: 'email', ok: function () { return situacaoEmail().ok; }, msg: function () { return situacaoEmail().msg; } },
     { campo: 'graduacao', ok: function () { return val('graduacao').length >= 3; }, msg: 'Informe sua graduação.' },
     { campo: 'registro', ok: function () { return marcados('funcoes').indexOf('Psicólogo(a)') < 0 || !!val('registro'); }, msg: 'Informe o seu CRP.' },
     { campo: 'experiencia', ok: function () { return !!val('experiencia'); }, msg: 'Escolha uma opção.' },
@@ -708,15 +780,47 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
   function mostrarErro(campo, msg) {
     var c = cartao(campo); if (!c) return;
     var m = c.querySelector('.erro-msg');
-    if (msg) { m.innerHTML = ICONE_ERRO; var s = document.createElement('span'); s.textContent = msg; m.appendChild(s); }
-    c.classList.toggle('tem-erro', !!msg);
+    if (!m.id) m.id = 'erro-' + campo;
+    var texto = msg && typeof msg === 'object' ? msg.texto : msg;
+    // mesma mensagem: não refaz (refazer no meio de um toque faria o botão Corrigir perder o clique)
+    var chave = texto ? texto + '|' + (msg.sugestao || '') : '';
+    if (m.getAttribute('data-msg') === chave) { c.classList.toggle('tem-erro', !!texto); return; }
+    m.setAttribute('data-msg', chave);
+    if (texto) {
+      m.innerHTML = ICONE_ERRO; var s = document.createElement('span'); s.textContent = texto; m.appendChild(s);
+      if (msg.sugestao) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'erro-acao'; b.textContent = 'Corrigir';
+        b.setAttribute('aria-label', 'Corrigir para ' + msg.sugestao);
+        b.addEventListener('click', function () {
+          var i = el(msg.id); if (!i) return;
+          i.value = msg.sugestao;
+          i.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        m.appendChild(b);
+      }
+    }
+    c.classList.toggle('tem-erro', !!texto);
+    // leitores de tela: o campo diz que tem erro e lê a mensagem
+    qa(c, 'input:not([type=radio]):not([type=checkbox]):not([type=file]), select, textarea, .chips, .modelagens, .tamanhos').forEach(function (x) {
+      if (texto) { x.setAttribute('aria-invalid', 'true'); x.setAttribute('aria-describedby', m.id); }
+      else { x.removeAttribute('aria-invalid'); x.removeAttribute('aria-describedby'); }
+    });
+  }
+  // Grupos de opções com nome, para leitores de tela
+  function nomearGrupos() {
+    qa(form, '.chips, .modelagens, .tamanhos').forEach(function (g) {
+      var r = g.closest('.pergunta').querySelector('.rotulo');
+      g.setAttribute('role', g.classList.contains('chips') ? 'group' : 'radiogroup');
+      if (r) g.setAttribute('aria-label', r.textContent.replace(/\*/g, '').trim());
+    });
   }
   function validar() {
     var erros = [], okCount = 0;
     regras.forEach(function (r) {
       var ok = r.ok();
       if (ok) okCount++; else erros.push(r);
-      if (tentouEnviar) mostrarErro(r.campo, ok ? '' : r.msg);
+      if (tentouEnviar) mostrarErro(r.campo, ok ? '' : (typeof r.msg === 'function' ? r.msg() : r.msg));
     });
     el('barra').style.width = Math.round(okCount / regras.length * 100) + '%';
     return erros;
@@ -747,6 +851,9 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
         if (e.type === 'checkbox') e.checked = (d[e.name] || []).indexOf(e.value) >= 0;
         else if (e.type === 'radio') e.checked = d[e.name] === e.value;
         else e.value = d[e.name];
+      });
+      el('avisoRascunho').hidden = !Object.keys(d).some(function (k) {
+        return Array.isArray(d[k]) ? d[k].length > 0 : typeof d[k] === 'string' && d[k].trim() !== '';
       });
     } catch (err) {}
   }
@@ -783,22 +890,33 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
       foto: foto ? { base64: foto.base64, tipo: foto.tipo } : null
     };
   }
+  var avisosEnvio = [];
   function enviando(sim) {
-    var b = el('enviar');
+    var b = el('enviar'), nota = el('avisoEnvio');
     emEnvio = sim;
     b.disabled = sim; b.classList.toggle('enviando', sim);
     el('enviarTexto').textContent = sim ? 'Enviando a foto e as respostas...' : 'Enviar cadastro';
-    el('avisoEnvio').textContent = sim ? 'Não feche esta página até aparecer a confirmação.' : 'Suas respostas vão direto para a coordenação da Índigo Rei.';
+    nota.textContent = sim ? 'Não feche esta página até aparecer a confirmação.' : 'Suas respostas vão direto para a coordenação da Índigo Rei.';
+    // Envio demorado: avisa que continua, sem nunca cancelar (cancelar poderia duplicar o cadastro)
+    avisosEnvio.forEach(clearTimeout); avisosEnvio = [];
+    if (sim) {
+      avisosEnvio.push(setTimeout(function () { if (emEnvio) nota.textContent = 'Ainda enviando. Pode levar até um minuto. Mantenha esta página aberta.'; }, 15000));
+      avisosEnvio.push(setTimeout(function () { if (emEnvio) nota.textContent = 'Está demorando mais que o normal, mas o envio continua. Mantenha esta página aberta.'; }, 60000));
+    }
   }
   function alerta(msg) { var a = el('alerta'); a.textContent = msg || ''; a.classList.toggle('visivel', !!msg); }
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     alerta('');
+    if (preparandoFoto) { alerta('Espere a foto terminar de carregar e toque em Enviar cadastro de novo.'); return; }
+    // e-mail com possível erro de digitação: a pessoa vê o aviso num envio; se enviar de novo sem mudar, vale o que escreveu
+    Object.keys(emailsMostrados).forEach(function (k) { emailsAvisados[k] = true; });
     tentouEnviar = true;
     var erros = validar();
+    var se = situacaoEmail(); if (!se.ok && se.msg && se.msg.avisoEmail) emailsMostrados[se.msg.avisoEmail] = true;
     if (erros.length) {
-      alerta(erros.length === 1 ? 'Falta 1 resposta. Ela está marcada em vermelho acima.' : 'Faltam ' + erros.length + ' respostas. Elas estão marcadas em vermelho acima.');
+      alerta(erros.length === 1 ? 'Confira 1 resposta, marcada em vermelho acima.' : 'Confira ' + erros.length + ' respostas, marcadas em vermelho acima.');
       var c = cartao(erros[0].campo);
       c.scrollIntoView({ behavior: 'smooth', block: 'center' });
       var f = c.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea');
@@ -845,11 +963,36 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
+  /* ---------- tecla Enter / "Ir" do celular: vai para o próximo campo, não envia ---------- */
+  function ehTexto(x) { return x.tagName === 'TEXTAREA' || (x.tagName === 'INPUT' && /^(text|email|tel|number|search|url)$/.test(x.type)); }
+  function proximoControle(atual) {
+    var lista = qa(form, 'input, select, textarea').filter(function (x) {
+      return x === atual || (x.type !== 'hidden' && !x.disabled && x.tabIndex >= 0 && x.offsetParent !== null);
+    });
+    var i = lista.indexOf(atual);
+    return i >= 0 ? lista[i + 1] || null : null;
+  }
+  function dicaEnter(x) {
+    var p = proximoControle(x);
+    x.setAttribute('enterkeyhint', p && ehTexto(p) ? 'next' : 'done');
+  }
+  form.addEventListener('focusin', function (e) { if (e.target.tagName === 'INPUT' && ehTexto(e.target)) dicaEnter(e.target); });
+  form.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+    var t = e.target;
+    if (t.tagName !== 'INPUT' || !ehTexto(t)) return;
+    e.preventDefault();
+    var p = proximoControle(t);
+    if (p && ehTexto(p)) p.focus(); else t.blur();
+  });
+
   /* ---------- início ---------- */
   restaurarRascunho();
+  nomearGrupos();
   atualizarOutros();
   atualizarContadores();
   validar();
+  qa(form, 'input').forEach(function (x) { if (ehTexto(x)) x.setAttribute('enterkeyhint', 'next'); });
   if (/^https:\/\/script\.google\.com\//.test(URL_SERVIDOR)) {
     try { fetch(URL_SERVIDOR + '?acordar=1', { credentials: 'omit' }).catch(function () {}); } catch (e) {}
   }

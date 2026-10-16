@@ -12,6 +12,7 @@ Este repositório tem só o código. **Nenhum dado da equipe fica aqui.**
   - Pasta **Fotos da equipe**: uma foto por envio.
 - Quem envia de novo com o mesmo e-mail substitui a resposta anterior.
 - O link antigo do Apps Script continua funcionando e grava na mesma planilha.
+- **Sistema Índigo Rei:** cada envio também vai para a caixa "Cadastros recebidos" do sistema (sistema.indigorei.com.br), só com os dados de trabalho (nome, contato, funções, áreas, formação). Liga-se com três propriedades do script (`SISTEMA_URL`, `SISTEMA_CHAVE_PUBLICA`, `SISTEMA_CHAVE`), geradas no próprio sistema. A chave nunca vai para o repositório. As respostas antigas vão com a função `enviarHistoricoAoSistema()`, rodada uma vez pelo editor.
 
 ## Para mudar
 

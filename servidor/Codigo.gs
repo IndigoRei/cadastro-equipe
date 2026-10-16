@@ -15,6 +15,13 @@
  *
  * Quem enviar de novo com o mesmo e-mail substitui a resposta anterior
  * (uma linha por pessoa na planilha).
+ *
+ * LIGAÇÃO COM O SISTEMA ÍNDIGO REI (sistema.indigorei.com.br):
+ *   Cada envio também vai para a caixa "Cadastros recebidos" do sistema, só com os dados de trabalho
+ *   (nome, contato, funções, áreas, formação). Bio, foto, uniforme e curiosidades ficam só na planilha.
+ *   No sistema, em Cadastros recebidos > Ligação com os formulários, gere a chave e crie em
+ *   Configurações do projeto > Propriedades do script: SISTEMA_URL, SISTEMA_CHAVE_PUBLICA e SISTEMA_CHAVE.
+ *   Depois rode enviarHistoricoAoSistema() uma vez para mandar as respostas que já estão na planilha.
  */
 
 const CONFIG = {
@@ -322,7 +329,69 @@ function enviarCadastro(dados) {
     trava.releaseLock();
   }
 
+  enviarAoSistema_(r.email, dadosParaSistema_(r));
   return { ok: true, primeiroNome: r.nomeCompleto.split(/\s+/)[0], atualizado: linhaExistente > 0 };
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Sistema Índigo Rei                                                  */
+/* ------------------------------------------------------------------ */
+
+// Só dados de trabalho. Bio, foto, uniforme, aniversário e curiosidades ficam na planilha.
+function dadosParaSistema_(r) {
+  const juntar = function (v) { return Array.isArray(v) ? v.join(', ') : String(v || ''); };
+  return {
+    nomeCompleto: r.nomeCompleto, nomeProfissional: r.nomeProfissional, funcoes: juntar(r.funcoes),
+    whatsapp: String(r.whatsapp || '').replace(/\D/g, ''), email: String(r.email || '').toLowerCase(),
+    areas: juntar(r.areas), etapas: juntar(r.etapas), idiomas: r.idiomas, registro: r.registro,
+    graduacao: r.graduacao, posGraduacao: r.posGraduacao, experiencia: r.experiencia
+  };
+}
+
+// Entrega ao sistema. Nunca atrapalha o cadastro: se falhar, só registra no log de execuções.
+function enviarAoSistema_(email, dados) {
+  const props = PropertiesService.getScriptProperties();
+  const url = props.getProperty('SISTEMA_URL');
+  const publica = props.getProperty('SISTEMA_CHAVE_PUBLICA');
+  const chave = props.getProperty('SISTEMA_CHAVE');
+  if (!url || !publica || !chave || !email) return false;
+  try {
+    const resposta = UrlFetchApp.fetch(url.replace(/\/+$/, '') + '/rest/v1/rpc/cadastro_receber', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { apikey: publica },
+      payload: JSON.stringify({ p_chave: chave, p_tipo: 'equipe', p_envio: email, p_dados: dados }),
+      muteHttpExceptions: true
+    });
+    if (resposta.getResponseCode() >= 300) {
+      console.warn('Falha ao enviar ao sistema: HTTP ' + resposta.getResponseCode() + ' ' + resposta.getContentText().slice(0, 200));
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Falha ao enviar ao sistema: ' + (err && err.message || err));
+    return false;
+  }
+}
+
+// Rodar uma vez pelo editor, depois de criar as propriedades. Pode rodar de novo: o sistema reconhece pelo e-mail.
+function enviarHistoricoAoSistema() {
+  const planilha = pegarPlanilha_(PropertiesService.getScriptProperties().getProperty('PLANILHA_ID'));
+  if (!planilha) throw new Error('Planilha não encontrada. Rode configurar() primeiro.');
+  const aba = planilha.getSheetByName('Respostas') || planilha.getSheets()[0];
+  if (aba.getLastRow() < 2) return 'Nada para enviar.';
+  const valores = aba.getRange(2, 1, aba.getLastRow() - 1, COLUNAS.length).getDisplayValues();
+  let ok = 0, falhas = 0;
+  valores.forEach(function (linha) {
+    const r = {};
+    COLUNAS.forEach(function (c, i) { r[c[0]] = String(linha[i] || '').replace(/^'/, ''); });
+    if (!r.email) return;
+    if (enviarAoSistema_(r.email.trim().toLowerCase(), dadosParaSistema_(r))) ok++; else falhas++;
+  });
+  const resumo = 'Enviados ao sistema: ' + ok + '. Falhas: ' + falhas + (falhas ? ' (veja o log de execuções).' : '.');
+  Logger.log(resumo);
+  return resumo;
 }
 
 

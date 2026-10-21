@@ -1,7 +1,7 @@
 /**
  * CADASTRO DA EQUIPE ÍNDIGO REI
  * Página: https://equipe.indigorei.com.br (GitHub Pages, repositório IndigoRei/cadastro-equipe).
- * Ela envia para este servidor por doPost. O link antigo do Apps Script (doGet) continua funcionando.
+ * Ela envia para este servidor por doPost. O link antigo do Apps Script (doGet) só mostra o endereço novo.
  *
  * Respostas: planilha "Cadastro da Equipe Índigo Rei (respostas)"
  * Fotos:     pasta "Cadastro da Equipe Índigo Rei" > "Fotos da equipe"
@@ -13,8 +13,9 @@
  *      Executar como: Eu  |  Quem pode acessar: Qualquer pessoa
  *   3. Copie o link do app da Web e mande para a equipe.
  *
- * Quem enviar de novo com o mesmo e-mail substitui a resposta anterior
- * (uma linha por pessoa na planilha).
+ * Quem enviar de novo com o mesmo e-mail ganha uma linha nova: nada é substituído, porque o formulário
+ * é público e o e-mail não prova quem é a pessoa (auditoria de 20/10/2026). A coordenação apaga a linha
+ * antiga quando conferir, para a contagem do uniforme não dobrar.
  *
  * LIGAÇÃO COM O SISTEMA ÍNDIGO REI (sistema.indigorei.com.br):
  *   Cada envio também vai para a caixa "Cadastros recebidos" do sistema, só com os dados de trabalho
@@ -80,11 +81,8 @@ const COLUNAS_LARGAS = ['graduacao', 'posGraduacao', 'cursos', 'areas', 'bioCurt
 function doGet(e) {
   // A página equipe.indigorei.com.br chama ?acordar=1 enquanto a pessoa preenche, para o envio ser rápido.
   if (e && e.parameter && e.parameter.acordar) return ContentService.createTextOutput('ok');
-  const pagina = HtmlService.createTemplateFromFile('Index');
-  pagina.logo = obterLogoDataUri_();
-  return pagina.evaluate()
-    .setTitle('Cadastro da Equipe | Índigo Rei')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  // Sem a página antiga: ela deixava as funções do editor (configurar, enviarHistoricoAoSistema) ao alcance de quem a abrisse.
+  return ContentService.createTextOutput('O cadastro da equipe agora fica em https://equipe.indigorei.com.br');
 }
 
 // Envio vindo da página equipe.indigorei.com.br
@@ -100,17 +98,6 @@ function doPost(e) {
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
-
-function obterLogoDataUri_() {
-  const id = PropertiesService.getScriptProperties().getProperty('LOGO_ID') || CONFIG.LOGO_ID_ORIGINAL;
-  try {
-    const blob = DriveApp.getFileById(id).getBlob();
-    return 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
-  } catch (e) {
-    return ''; // sem logo, a página mostra o nome "Índigo Rei" no lugar
-  }
-}
-
 
 /* ------------------------------------------------------------------ */
 /* Configuração (rodar uma vez pelo editor)                            */
@@ -305,8 +292,8 @@ function enviarCadastro(dados) {
     return protegerCelula_(v || '');
   });
 
-  // Uma linha por pessoa: mesmo e-mail substitui a resposta anterior
-  let linhaExistente = 0;
+  // Sempre uma linha nova: o e-mail não prova quem é a pessoa, então ninguém substitui a resposta de outra.
+  let jaTinha = false;
   const trava = LockService.getScriptLock();
   trava.waitLock(30000);
   try {
@@ -316,10 +303,10 @@ function enviarCadastro(dados) {
     if (ultima > 1) {
       const emails = aba.getRange(2, colEmail, ultima - 1, 1).getValues();
       for (let i = 0; i < emails.length; i++) {
-        if (String(emails[i][0]).trim().toLowerCase() === r.email) { linhaExistente = i + 2; break; }
+        if (String(emails[i][0]).trim().toLowerCase() === r.email) { jaTinha = true; break; }
       }
     }
-    const destino = linhaExistente || Math.max(ultima, 1) + 1;
+    const destino = Math.max(ultima, 1) + 1;
     // Formata a linha ANTES de gravar: texto puro (telefone e aniversário não viram número ou data) e data no padrão brasileiro.
     // (appendRow apaga essa formatação, por isso não é usado.)
     aba.getRange(destino, 1).setNumberFormat('dd/MM/yyyy HH:mm');
@@ -329,8 +316,10 @@ function enviarCadastro(dados) {
     trava.releaseLock();
   }
 
-  enviarAoSistema_(r.email, dadosParaSistema_(r));
-  return { ok: true, primeiroNome: r.nomeCompleto.split(/\s+/)[0], atualizado: linhaExistente > 0 };
+  // Envio repetido vai ao sistema com chave própria: não troca o que já foi tratado lá.
+  enviarAoSistema_(chaveNoSistema_(r.email, jaTinha, r.dataHora), dadosParaSistema_(r));
+  // A mesma resposta exista ou não o e-mail: a página não revela quem já se cadastrou.
+  return { ok: true, primeiroNome: r.nomeCompleto.split(/\s+/)[0] };
 }
 
 
@@ -347,6 +336,11 @@ function dadosParaSistema_(r) {
     areas: juntar(r.areas), etapas: juntar(r.etapas), idiomas: r.idiomas, registro: r.registro,
     graduacao: r.graduacao, posGraduacao: r.posGraduacao, experiencia: r.experiencia
   };
+}
+
+// Primeiro envio de um e-mail usa o próprio e-mail como chave (como sempre foi); os seguintes, e-mail + data e hora.
+function chaveNoSistema_(email, repetido, dataHora) {
+  return repetido && dataHora instanceof Date ? email + '.' + Utilities.formatDate(dataHora, CONFIG.FUSO, 'yyMMddHHmmss') : email;
 }
 
 // Entrega ao sistema. Nunca atrapalha o cadastro: se falhar, só registra no log de execuções.
@@ -375,19 +369,25 @@ function enviarAoSistema_(email, dados) {
   }
 }
 
-// Rodar uma vez pelo editor, depois de criar as propriedades. Pode rodar de novo: o sistema reconhece pelo e-mail.
+// Rodar uma vez pelo editor, depois de criar as propriedades. Pode rodar de novo: envio igual ao que o sistema
+// já tratou não muda nada lá. Cada linha vai com a mesma chave do envio original.
 function enviarHistoricoAoSistema() {
   const planilha = pegarPlanilha_(PropertiesService.getScriptProperties().getProperty('PLANILHA_ID'));
   if (!planilha) throw new Error('Planilha não encontrada. Rode configurar() primeiro.');
   const aba = planilha.getSheetByName('Respostas') || planilha.getSheets()[0];
   if (aba.getLastRow() < 2) return 'Nada para enviar.';
   const valores = aba.getRange(2, 1, aba.getLastRow() - 1, COLUNAS.length).getDisplayValues();
+  const datas = aba.getRange(2, 1, aba.getLastRow() - 1, 1).getValues();
+  const vistos = {};
   let ok = 0, falhas = 0;
-  valores.forEach(function (linha) {
+  valores.forEach(function (linha, n) {
     const r = {};
     COLUNAS.forEach(function (c, i) { r[c[0]] = String(linha[i] || '').replace(/^'/, ''); });
     if (!r.email) return;
-    if (enviarAoSistema_(r.email.trim().toLowerCase(), dadosParaSistema_(r))) ok++; else falhas++;
+    const email = r.email.trim().toLowerCase();
+    const chave = chaveNoSistema_(email, !!vistos[email], datas[n][0]);
+    vistos[email] = true;
+    if (enviarAoSistema_(chave, dadosParaSistema_(r))) ok++; else falhas++;
   });
   const resumo = 'Enviados ao sistema: ' + ok + '. Falhas: ' + falhas + (falhas ? ' (veja o log de execuções).' : '.');
   Logger.log(resumo);

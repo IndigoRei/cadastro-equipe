@@ -941,7 +941,7 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
         if (!res || !res.ok) { var e1 = new Error(res && res.erro ? res.erro : ''); e1.doServidor = true; throw e1; }
         limparRascunho();
         var nome = res.primeiroNome || '';
-        el('sucessoTitulo').textContent = res.atualizado ? 'Cadastro atualizado!' : 'Cadastro enviado!';
+        el('sucessoTitulo').textContent = 'Cadastro enviado!';
         el('sucessoTexto').textContent = (nome ? 'Obrigado, ' + nome + '! ' : 'Obrigado! ') +
           'Suas informações chegaram para a coordenação. Que bom ter você na Índigo Rei.';
         form.style.display = 'none';

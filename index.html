@@ -239,6 +239,31 @@
   .chip input:focus-visible + span,.tam input:focus-visible + span,.opcao-card input:focus-visible + .caixa,.aceite input:focus-visible ~ .marca-box{outline:2px solid var(--navy);outline-offset:2px}
   .contador.perto{color:#8A6514}
 
+  /* Horários de trabalho: um dia por linha; marcado, abre das __ às __ e, se precisar, um segundo horário */
+  .dias-h{display:grid;gap:8px;margin-top:12px}
+  .dia-h{border:1.5px solid var(--line);border-radius:12px;background:var(--field);transition:border-color .15s,background .15s}
+  .dia-h:has(.dia-nome input:checked){border-color:#C9D3E0;background:#fff}
+  .dia-nome{position:relative;display:flex;align-items:center;gap:12px;min-height:50px;padding:0 14px;cursor:pointer;font-weight:500}
+  .dia-nome input{position:absolute;opacity:0;width:1px;height:1px}
+  .dia-nome .marca-box{width:22px;height:22px;border-radius:6px;border:2px solid #B9B2A3;flex:none;transition:all .15s;
+    background-position:center;background-repeat:no-repeat;background-size:14px}
+  .dia-nome input:checked + .marca-box{border-color:var(--navy);background-color:var(--navy);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M1 5l3.5 3.5L11 1.5' fill='none' stroke='%23C89C36' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+  .dia-nome input:focus-visible + .marca-box{outline:2px solid var(--navy);outline-offset:2px}
+  .dia-faixas{display:none;padding:0 14px 10px 48px}
+  .dia-h:has(.dia-nome input:checked) .dia-faixas{display:block}
+  .hora-faixa{display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;max-width:400px}
+  .hora-faixa span{font-size:14px;color:var(--muted)}
+  .hora-faixa select{padding:10px 32px 10px 12px;background-position:right 12px center}
+  .hora-faixa.segunda{display:none;margin-top:8px}
+  .dia-h.com-2 .hora-faixa.segunda{display:grid}
+  .mais-h{font:500 13.5px 'Poppins',sans-serif;color:var(--navy);background:none;border:0;padding:0;min-height:44px;cursor:pointer;
+    text-decoration:underline;text-underline-offset:3px}
+  @media (max-width:560px){ .dia-faixas{padding-left:14px} }
+
+  /* Link curto (equipe.indigorei.com.br/horarios): só nome, e-mail e horários */
+  .so-horarios .secao:not([data-curto]), .so-horarios .pergunta:not([data-curto]), .so-horarios [data-longo]{display:none}
+
   /* avisos */
   .aviso-rascunho{background:var(--gold-soft);color:var(--navy);border-radius:12px;padding:12px 16px;font-size:14px;margin:0 0 4px}
   .erro-msg{flex-wrap:wrap;align-items:flex-start}
@@ -259,12 +284,12 @@
     <div class="capa-topo"></div>
     <div class="capa-corpo">
       <img class="logo" src="logo.png" alt="Índigo Rei" width="760" height="193">
-      <h1>Cadastro da Equipe</h1>
-      <p>Estamos montando o banco de informações da nossa equipe e uma publicação para apresentar cada profissional às famílias e nas nossas redes, com foto e qualificações.</p>
-      <p>Aproveitamos para coletar o tamanho da sua camisa para a produção do uniforme.</p>
+      <h1 id="capaTitulo">Cadastro da Equipe</h1>
+      <p id="capaTexto">Estamos montando o banco de informações da nossa equipe e uma publicação para apresentar cada profissional às famílias e nas nossas redes, com foto e qualificações.</p>
+      <p data-longo>Aproveitamos para coletar o tamanho da sua camisa para a produção do uniforme.</p>
       <div class="meta">
-        <span class="selo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Cerca de 10 minutos</span>
-        <span class="selo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Tenha uma foto sua à mão</span>
+        <span class="selo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="seloTempo">Cerca de 10 minutos</span></span>
+        <span class="selo" data-longo><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Tenha uma foto sua à mão</span>
       </div>
       <p class="legenda-obrig">* Indica pergunta obrigatória</p>
     </div>
@@ -274,13 +299,13 @@
     <p class="aviso-rascunho" id="avisoRascunho" role="status" hidden>Recuperamos o que você já tinha preenchido neste aparelho. A foto e as duas autorizações precisam ser marcadas de novo.</p>
 
     <!-- 1. Identificação -->
-    <section class="secao">
+    <section class="secao" data-curto>
       <div class="cartao secao-cab">
         <div class="secao-num">1</div>
         <div><h2>Quem é você</h2><p>Dados de identificação e contato. O contato fica só para uso interno.</p></div>
       </div>
 
-      <div class="cartao pergunta" data-campo="nomeCompleto">
+      <div class="cartao pergunta" data-campo="nomeCompleto" data-curto>
         <label class="rotulo" for="nomeCompleto">Nome completo<span class="obrig">*</span></label>
         <p class="ajuda">Como está no seu documento.</p>
         <input type="text" id="nomeCompleto" name="nomeCompleto" autocomplete="name" maxlength="150">
@@ -320,9 +345,9 @@
         <div class="erro-msg"></div>
       </div>
 
-      <div class="cartao pergunta" data-campo="email">
+      <div class="cartao pergunta" data-campo="email" data-curto>
         <label class="rotulo" for="email">E-mail<span class="obrig">*</span></label>
-        <p class="ajuda">Se precisar corrigir algo depois, é só enviar de novo com este mesmo e-mail.</p>
+        <p class="ajuda" id="ajudaEmail">Se precisar corrigir algo depois, é só enviar de novo com este mesmo e-mail.</p>
         <input type="email" id="email" name="email" inputmode="email" autocomplete="email" placeholder="seuemail@exemplo.com" maxlength="150">
         <div class="erro-msg"></div>
       </div>
@@ -343,10 +368,25 @@
       </div>
     </section>
 
-    <!-- 2. Formação -->
-    <section class="secao">
+    <!-- 2. Horários (Davi, 25/10/2026): vira o horário de trabalho no sistema -->
+    <section class="secao" data-curto>
       <div class="cartao secao-cab">
         <div class="secao-num">2</div>
+        <div><h2>Seus horários</h2><p>Para montarmos a agenda sem marcar nada fora do seu horário.</p></div>
+      </div>
+
+      <div class="cartao pergunta" data-campo="horarios" data-curto>
+        <span class="rotulo">Em que dias e horários você pode trabalhar na Índigo?<span class="obrig">*</span></span>
+        <p class="ajuda">Marque os dias e diga das que horas às que horas. Se o dia tiver uma pausa, como almoço ou outro trabalho, use o segundo horário.</p>
+        <div class="dias-h" id="diasH" role="group" aria-label="Dias e horários em que você pode trabalhar"></div>
+        <div class="erro-msg"></div>
+      </div>
+    </section>
+
+    <!-- 3. Formação -->
+    <section class="secao">
+      <div class="cartao secao-cab">
+        <div class="secao-num">3</div>
         <div><h2>Formação e qualificações</h2><p>Base do banco de informações e do que vai na publicação.</p></div>
       </div>
 
@@ -437,10 +477,10 @@
       </div>
     </section>
 
-    <!-- 3. Publicação -->
+    <!-- 4. Publicação -->
     <section class="secao">
       <div class="cartao secao-cab">
-        <div class="secao-num">3</div>
+        <div class="secao-num">4</div>
         <div><h2>Para a publicação</h2><p>O que vai aparecer no post de apresentação e no banco da equipe.</p></div>
       </div>
 
@@ -496,10 +536,10 @@
       </div>
     </section>
 
-    <!-- 4. Uniforme -->
+    <!-- 5. Uniforme -->
     <section class="secao">
       <div class="cartao secao-cab">
-        <div class="secao-num">4</div>
+        <div class="secao-num">5</div>
         <div><h2>Uniforme</h2><p>Para a produção das camisas da equipe.</p></div>
       </div>
 
@@ -542,10 +582,10 @@
       </div>
     </section>
 
-    <!-- 5. Autorização -->
+    <!-- 6. Autorização -->
     <section class="secao">
       <div class="cartao secao-cab">
-        <div class="secao-num">5</div>
+        <div class="secao-num">6</div>
         <div><h2>Autorização</h2><p>Necessária para publicarmos sua foto e suas informações.</p></div>
       </div>
 
@@ -594,7 +634,9 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
     if (!emEnvio) return;
     e.preventDefault(); e.returnValue = '';
   });
-  var CHAVE_RASCUNHO = 'indigo-cadastro-equipe-v1';
+  // Link curto equipe.indigorei.com.br/horarios (?horarios): só nome, e-mail e horários, para quem já mandou o cadastro.
+  var CURTO = /(^|[?#&])horarios(\b|=|$)/.test(location.search + location.hash);
+  var CHAVE_RASCUNHO = 'indigo-cadastro-equipe-v1' + (CURTO ? '-horarios' : '');
   var foto = null;
   var preparandoFoto = false;
   var emailsMostrados = {}, emailsAvisados = {}; // e-mail com possível erro de digitação: aviso já mostrado / mantido pela pessoa
@@ -758,6 +800,56 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
   ['dragleave', 'drop'].forEach(function (ev) { zona.addEventListener(ev, function (e) { e.preventDefault(); zona.classList.remove('arrastando'); }); });
   zona.addEventListener('drop', function (e) { var f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) receberArquivo(f); });
 
+  /* ---------- horários de trabalho ---------- */
+  var DIAS_H = [['seg', 'segunda', 'Segunda'], ['ter', 'terça', 'Terça'], ['qua', 'quarta', 'Quarta'], ['qui', 'quinta', 'Quinta'],
+    ['sex', 'sexta', 'Sexta'], ['sab', 'sábado', 'Sábado']];
+  var HORAS = [];
+  for (var mh = 7 * 60; mh <= 21 * 60; mh += 30) HORAS.push((mh < 600 ? '0' : '') + Math.floor(mh / 60) + ':' + (mh % 60 ? '30' : '00'));
+  var OPCOES_HORA = '<option value="">--:--</option>' + HORAS.map(function (h) { return '<option>' + h + '</option>'; }).join('');
+  el('diasH').innerHTML = DIAS_H.map(function (d) {
+    var faixa = function (n) {
+      var qual = n === 2 ? ', segundo horário' : '';
+      return '<div class="hora-faixa' + (n === 2 ? ' segunda' : '') + '"><span>' + (n === 2 ? 'e das' : 'das') + '</span>' +
+        '<select name="h_' + d[0] + '_' + n + '_i" aria-label="' + d[2] + qual + ', começo">' + OPCOES_HORA + '</select><span>às</span>' +
+        '<select name="h_' + d[0] + '_' + n + '_f" aria-label="' + d[2] + qual + ', fim">' + OPCOES_HORA + '</select></div>';
+    };
+    return '<div class="dia-h" id="dia-' + d[0] + '"><label class="dia-nome"><input type="checkbox" name="h_' + d[0] + '" value="1">' +
+      '<span class="marca-box"></span>' + d[2] + '</label><div class="dia-faixas">' + faixa(1) + faixa(2) +
+      '<button type="button" class="mais-h" data-dia="' + d[0] + '"></button></div></div>';
+  }).join('');
+  function segundoHorario(dia, aberto) {
+    var linha = el('dia-' + dia);
+    linha.classList.toggle('com-2', aberto);
+    if (!aberto) { form.elements['h_' + dia + '_2_i'].value = ''; form.elements['h_' + dia + '_2_f'].value = ''; }
+    linha.querySelector('.mais-h').textContent = aberto ? 'Tirar o segundo horário' : '+ Outro horário neste dia';
+  }
+  qa(el('diasH'), '.mais-h').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var dia = b.getAttribute('data-dia');
+      segundoHorario(dia, !el('dia-' + dia).classList.contains('com-2'));
+      validar(); salvarRascunho();
+    });
+  });
+  // Lê os dias marcados: {faixas: [{dia, inicio, fim}], erro: 'mensagem' ou ''}
+  function lerHorarios() {
+    var faixas = [], erro = '';
+    DIAS_H.forEach(function (d) {
+      if (!form.elements['h_' + d[0]].checked) return;
+      var doDia = [];
+      [1, 2].forEach(function (n) {
+        if (n === 2 && !el('dia-' + d[0]).classList.contains('com-2')) return;
+        var ini = val('h_' + d[0] + '_' + n + '_i'), fim = val('h_' + d[0] + '_' + n + '_f');
+        if (!ini || !fim) { erro = erro || (ini || fim || n === 1 ? 'Complete o horário de ' + d[1] + '.' : 'Complete o segundo horário de ' + d[1] + ' ou toque em Tirar o segundo horário.'); return; }
+        if (fim <= ini) { erro = erro || 'Confira ' + d[1] + ': o fim vem depois do começo.'; return; }
+        doDia.push({ dia: d[0], inicio: ini, fim: fim });
+      });
+      if (doDia.length === 2 && doDia[0].inicio < doDia[1].fim && doDia[1].inicio < doDia[0].fim) erro = erro || 'Os dois horários de ' + d[1] + ' se cruzam. Confira.';
+      faixas = faixas.concat(doDia);
+    });
+    if (!faixas.length && !erro) erro = 'Marque pelo menos um dia e o horário.';
+    return { faixas: faixas, erro: erro };
+  }
+
   /* ---------- validação ---------- */
   var regras = [
     { campo: 'nomeCompleto', ok: function () { return val('nomeCompleto').split(/\s+/).filter(Boolean).length >= 2; }, msg: 'Escreva nome e sobrenome.' },
@@ -765,6 +857,7 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
     { campo: 'funcoes', ok: function () { return marcados('funcoes').length > 0 && outroOk('funcoes', 'funcoesOutro'); }, msg: 'Marque ao menos uma função (e escreva qual, se marcou "Outra").' },
     { campo: 'whatsapp', ok: function () { return val('whatsapp').replace(/\D/g, '').length >= 10; }, msg: 'Informe o WhatsApp com DDD.' },
     { campo: 'email', ok: function () { return situacaoEmail().ok; }, msg: function () { return situacaoEmail().msg; } },
+    { campo: 'horarios', ok: function () { return !lerHorarios().erro; }, msg: function () { return lerHorarios().erro; } },
     { campo: 'graduacao', ok: function () { return val('graduacao').length >= 3; }, msg: 'Informe sua graduação.' },
     { campo: 'registro', ok: function () { return marcados('funcoes').indexOf('Psicólogo(a)') < 0 || !!val('registro'); }, msg: 'Informe o seu CRP.' },
     { campo: 'experiencia', ok: function () { return !!val('experiencia'); }, msg: 'Escolha uma opção.' },
@@ -775,6 +868,7 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
     { campo: 'tamanho', ok: function () { return !!radio('tamanho'); }, msg: 'Escolha o tamanho.' },
     { campo: 'consentimento', ok: function () { return chk('autorizaImagem') && chk('declaracao'); }, msg: 'Marque as duas confirmações para enviar.' }
   ];
+  if (CURTO) regras = regras.filter(function (r) { return ['nomeCompleto', 'email', 'horarios'].indexOf(r.campo) >= 0; });
 
   function cartao(campo) { return form.querySelector('[data-campo="' + campo + '"]'); }
   function mostrarErro(campo, msg) {
@@ -861,6 +955,7 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
 
   /* ---------- envio ---------- */
   function coletar() {
+    if (CURTO) return { formulario: 'horarios', nomeCompleto: val('nomeCompleto'), email: val('email'), horarios: lerHorarios().faixas };
     var dd = val('aniversarioDia'), mm = val('aniversarioMes');
     return {
       nomeCompleto: val('nomeCompleto'),
@@ -887,7 +982,8 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
       obsUniforme: val('obsUniforme'),
       autorizaImagem: chk('autorizaImagem'),
       declaracao: chk('declaracao'),
-      foto: foto ? { base64: foto.base64, tipo: foto.tipo } : null
+      foto: foto ? { base64: foto.base64, tipo: foto.tipo } : null,
+      horarios: lerHorarios().faixas
     };
   }
   var avisosEnvio = [];
@@ -895,7 +991,7 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
     var b = el('enviar'), nota = el('avisoEnvio');
     emEnvio = sim;
     b.disabled = sim; b.classList.toggle('enviando', sim);
-    el('enviarTexto').textContent = sim ? 'Enviando a foto e as respostas...' : 'Enviar cadastro';
+    el('enviarTexto').textContent = sim ? (CURTO ? 'Enviando os horários...' : 'Enviando a foto e as respostas...') : (CURTO ? 'Enviar horários' : 'Enviar cadastro');
     nota.textContent = sim ? 'Não feche esta página até aparecer a confirmação.' : 'Suas respostas vão direto para a coordenação da Índigo Rei.';
     // Envio demorado: avisa que continua, sem nunca cancelar (cancelar poderia duplicar o cadastro)
     avisosEnvio.forEach(clearTimeout); avisosEnvio = [];
@@ -941,9 +1037,9 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
         if (!res || !res.ok) { var e1 = new Error(res && res.erro ? res.erro : ''); e1.doServidor = true; throw e1; }
         limparRascunho();
         var nome = res.primeiroNome || '';
-        el('sucessoTitulo').textContent = 'Cadastro enviado!';
+        el('sucessoTitulo').textContent = CURTO ? 'Horários enviados!' : 'Cadastro enviado!';
         el('sucessoTexto').textContent = (nome ? 'Obrigado, ' + nome + '! ' : 'Obrigado! ') +
-          'Suas informações chegaram para a coordenação. Que bom ter você na Índigo Rei.';
+          (CURTO ? 'Seus horários chegaram para a coordenação.' : 'Suas informações chegaram para a coordenação. Que bom ter você na Índigo Rei.');
         form.style.display = 'none';
         el('sucesso').classList.add('visivel');
         el('barra').style.width = '100%';
@@ -987,7 +1083,17 @@ var URL_SERVIDOR = 'https://script.google.com/macros/s/AKfycbwdNB6pMNf4RqccvzSHj
   });
 
   /* ---------- início ---------- */
+  if (CURTO) {
+    document.body.classList.add('so-horarios');
+    document.title = 'Horários da Equipe | Índigo Rei';
+    el('capaTitulo').textContent = 'Seus horários de trabalho';
+    el('capaTexto').textContent = 'Para montarmos a agenda, precisamos saber os dias e horários em que você pode trabalhar na Índigo. São só três perguntas.';
+    el('seloTempo').textContent = 'Cerca de 2 minutos';
+    el('ajudaEmail').textContent = 'Use o mesmo e-mail do seu cadastro na Índigo.';
+    el('enviarTexto').textContent = 'Enviar horários';
+  }
   restaurarRascunho();
+  DIAS_H.forEach(function (d) { segundoHorario(d[0], !!(val('h_' + d[0] + '_2_i') || val('h_' + d[0] + '_2_f'))); });
   nomearGrupos();
   atualizarOutros();
   atualizarContadores();

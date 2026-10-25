@@ -62,8 +62,12 @@ const COLUNAS = [
   ['tamanho', 'Camisa: tamanho'],
   ['obsUniforme', 'Observação sobre o uniforme'],
   ['autorizaImagem', 'Autorizou uso de imagem'],
-  ['declaracao', 'Confirmou a declaração']
+  ['declaracao', 'Confirmou a declaração'],
+  ['horarios', 'Horários em que pode trabalhar']
 ];
+
+// Dias e nomes dos horários de trabalho (o sistema usa os mesmos códigos: seg a sab).
+const DIAS_TRABALHO = { seg: 'segunda', ter: 'terça', qua: 'quarta', qui: 'quinta', sex: 'sexta', sab: 'sábado' };
 
 const OPCOES = {
   modelagem: ['Tradicional', 'Baby look'],
@@ -89,6 +93,8 @@ function doGet(e) {
 function doPost(e) {
   try {
     const dados = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    // Link curto equipe.indigorei.com.br/horarios: só nome, e-mail e horários (Davi, 25/10/2026).
+    if (dados && dados.formulario === 'horarios') return json_(enviarHorarios(dados));
     return json_(enviarCadastro(dados));
   } catch (err) {
     return json_({ ok: false, erro: String(err && err.message ? err.message : err) });
@@ -248,7 +254,8 @@ function enviarCadastro(dados) {
     tamanho: texto_(dados.tamanho, 5),
     obsUniforme: texto_(dados.obsUniforme, 300),
     autorizaImagem: dados.autorizaImagem === true ? 'Sim' : '',
-    declaracao: dados.declaracao === true ? 'Sim' : ''
+    declaracao: dados.declaracao === true ? 'Sim' : '',
+    horarios: horarios_(dados.horarios)
   };
 
   const faltando = [];
@@ -266,6 +273,7 @@ function enviarCadastro(dados) {
   if (!r.autorizaImagem) faltando.push('autorização de uso de imagem');
   if (!r.declaracao) faltando.push('declaração');
   if (!dados.foto || !dados.foto.base64) faltando.push('foto');
+  if (!r.horarios.length) faltando.push('horários em que pode trabalhar');
   if (faltando.length) throw new Error('Faltou preencher: ' + faltando.join(', ') + '.');
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)) throw new Error('Confira o e-mail informado.');
@@ -286,7 +294,7 @@ function enviarCadastro(dados) {
   r.dataHora = new Date();
 
   const linha = COLUNAS.map(function (c) {
-    const v = r[c[0]];
+    const v = c[0] === 'horarios' ? textoHorarios_(r.horarios) : r[c[0]];
     if (v instanceof Date) return v;
     if (Array.isArray(v)) return protegerCelula_(v.join(', '));
     return protegerCelula_(v || '');
@@ -298,6 +306,8 @@ function enviarCadastro(dados) {
   trava.waitLock(30000);
   try {
     const aba = planilha.getSheetByName('Respostas') || planilha.getSheets()[0];
+    // Planilha montada antes da pergunta dos horários: ganha o título da coluna nova.
+    if (!aba.getRange(1, COLUNAS.length).getValue()) aba.getRange(1, COLUNAS.length).setValue(COLUNAS[COLUNAS.length - 1][1]);
     const colEmail = indiceColuna_('email');
     const ultima = aba.getLastRow();
     if (ultima > 1) {
@@ -323,6 +333,75 @@ function enviarCadastro(dados) {
 }
 
 
+// Link curto dos horários: para quem já mandou o cadastro. Vai para a aba "Horários" da mesma planilha e para
+// o sistema, onde a importação grava os horários na ficha do profissional (achado pelo e-mail).
+function enviarHorarios(dados) {
+  const r = {
+    nomeCompleto: texto_(dados.nomeCompleto, 150),
+    email: texto_(dados.email, 150).toLowerCase(),
+    horarios: horarios_(dados.horarios)
+  };
+  if (r.nomeCompleto.split(/\s+/).filter(Boolean).length < 2) throw new Error('Escreva nome e sobrenome.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)) throw new Error('Confira o e-mail informado.');
+  if (!r.horarios.length) throw new Error('Marque pelo menos um horário.');
+
+  const planilha = pegarPlanilha_(PropertiesService.getScriptProperties().getProperty('PLANILHA_ID'));
+  if (!planilha) throw new Error('O formulário ainda não está configurado. Avise a coordenação da Índigo.');
+  const agora = new Date();
+  const trava = LockService.getScriptLock();
+  trava.waitLock(30000);
+  try {
+    let aba = planilha.getSheetByName('Horários');
+    if (!aba) {
+      aba = planilha.insertSheet('Horários');
+      aba.getRange(1, 1, 1, 4).setValues([['Data e hora do envio', 'Nome completo', 'E-mail', 'Horários em que pode trabalhar']]).setFontWeight('bold');
+      aba.setFrozenRows(1);
+    }
+    const destino = Math.max(aba.getLastRow(), 1) + 1;
+    aba.getRange(destino, 1).setNumberFormat('dd/MM/yyyy HH:mm');
+    aba.getRange(destino, 2, 1, 3).setNumberFormat('@');
+    aba.getRange(destino, 1, 1, 4).setValues([[agora, protegerCelula_(r.nomeCompleto), protegerCelula_(r.email), textoHorarios_(r.horarios)]]);
+  } finally {
+    trava.releaseLock();
+  }
+  // Cada envio com chave própria: o mais novo aparece no sistema e nada já tratado é trocado.
+  enviarAoSistema_(r.email + '.h' + Utilities.formatDate(agora, CONFIG.FUSO, 'yyMMddHHmmss'),
+    { formulario: 'horarios', nomeCompleto: r.nomeCompleto, email: r.email, horarios: r.horarios });
+  return { ok: true, primeiroNome: r.nomeCompleto.split(/\s+/)[0] };
+}
+
+// [{dia: 'seg', inicio: '08:00', fim: '12:00'}, ...]: dia de segunda a sábado, de meia em meia hora, até duas por dia.
+function horarios_(v) {
+  if (!Array.isArray(v)) return [];
+  const hora = /^([01]\d|2[0-3]):(00|30)$/;
+  const faixas = v.slice(0, 12).map(function (f) {
+    return { dia: String(f && f.dia || ''), inicio: String(f && f.inicio || ''), fim: String(f && f.fim || '') };
+  });
+  faixas.forEach(function (f) {
+    if (!DIAS_TRABALHO[f.dia] || !hora.test(f.inicio) || !hora.test(f.fim)) throw new Error('Confira os horários marcados.');
+    if (f.fim <= f.inicio) throw new Error('Confira os horários de ' + DIAS_TRABALHO[f.dia] + ': o fim vem depois do começo.');
+  });
+  faixas.forEach(function (a, i) {
+    faixas.forEach(function (b, j) {
+      if (i < j && a.dia === b.dia && a.inicio < b.fim && b.inicio < a.fim) {
+        throw new Error('Os dois horários de ' + DIAS_TRABALHO[a.dia] + ' se cruzam. Confira.');
+      }
+    });
+  });
+  return faixas;
+}
+
+// "segunda 08:00 às 12:00 e 14:00 às 18:00; quarta 13:30 às 19:00"
+function textoHorarios_(faixas) {
+  return Object.keys(DIAS_TRABALHO).map(function (d) {
+    const doDia = (faixas || []).filter(function (f) { return f.dia === d; })
+      .sort(function (a, b) { return a.inicio < b.inicio ? -1 : 1; })
+      .map(function (f) { return f.inicio + ' às ' + f.fim; });
+    return doDia.length ? DIAS_TRABALHO[d] + ' ' + doDia.join(' e ') : '';
+  }).filter(String).join('; ');
+}
+
+
 /* ------------------------------------------------------------------ */
 /* Sistema Índigo Rei                                                  */
 /* ------------------------------------------------------------------ */
@@ -330,12 +409,16 @@ function enviarCadastro(dados) {
 // Só dados de trabalho. Bio, foto, uniforme, aniversário e curiosidades ficam na planilha.
 function dadosParaSistema_(r) {
   const juntar = function (v) { return Array.isArray(v) ? v.join(', ') : String(v || ''); };
-  return {
+  const d = {
     nomeCompleto: r.nomeCompleto, nomeProfissional: r.nomeProfissional, funcoes: juntar(r.funcoes),
     whatsapp: String(r.whatsapp || '').replace(/\D/g, ''), email: String(r.email || '').toLowerCase(),
     areas: juntar(r.areas), etapas: juntar(r.etapas), idiomas: r.idiomas, registro: r.registro,
     graduacao: r.graduacao, posGraduacao: r.posGraduacao, experiencia: r.experiencia
   };
+  // Só a lista do envio vai ao sistema. Do histórico da planilha os horários voltam como texto e ficam de fora,
+  // para o reenvio do histórico continuar igual ao que o sistema já tratou.
+  if (Array.isArray(r.horarios) && r.horarios.length) d.horarios = r.horarios;
+  return d;
 }
 
 // Primeiro envio de um e-mail usa o próprio e-mail como chave (como sempre foi); os seguintes, e-mail + data e hora.

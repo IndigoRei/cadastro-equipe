@@ -2,7 +2,7 @@
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 const src = fs.readFileSync(__dirname + '/Codigo.gs', 'utf8');
 const PROPS = { PLANILHA_ID: 'p', PASTA_FOTOS_ID: 'f', SISTEMA_URL: 'https://x.supabase.co', SISTEMA_CHAVE_PUBLICA: 'pub', SISTEMA_CHAVE: 'k' };
-const linhas = [[]]; const chamadas = [];
+const linhas = [[]]; const chamadas = []; const cache = {};
 const faixa = (r, ls = linhas) => ({ setNumberFormat: () => faixa(r, ls), setWrap: () => faixa(r, ls), setVerticalAlignment: () => faixa(r, ls),
   setFontWeight: () => faixa(r, ls), getValue: () => '', setValue: () => faixa(r, ls),
   setValues: (v) => { ls[r - 1] = v[0]; return faixa(r, ls); },
@@ -16,9 +16,10 @@ const ctx = {
   SpreadsheetApp: { openById: () => ({ getSheetByName: (n) => (n === 'Horários' ? abaH : aba), getSheets: () => [aba], insertSheet: novaAbaH }) },
   DriveApp: { getFolderById: () => ({ isTrashed: () => false, createFile: () => ({ getUrl: () => 'u' }) }), getFileById: () => ({ isTrashed: () => false }) },
   LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
-  Utilities: { base64Decode: () => [1, 2, 3], newBlob: () => ({}), formatDate: (d, z, f) => f === 'yyMMddHHmmss' ? '261021180000' : 'x' },
+  Utilities: { base64Decode: (b) => (b === 'NAOJPEG' ? [1, 2, 3, 4] : [-1, -40, -1, 1]), newBlob: () => ({}), formatDate: (d, z, f) => f === 'yyMMddHHmmss' ? '261021180000' : 'x' },
   UrlFetchApp: { fetch: (u, o) => { chamadas.push(JSON.parse(o.payload)); return { getResponseCode: () => 204, getContentText: () => '' }; } },
   ContentService: { createTextOutput: (t) => ({ texto: t, setMimeType() { return this; } }), MimeType: { JSON: 'j' } },
+  CacheService: { getScriptCache: () => ({ get: (k) => cache[k] || null, put: (k, v) => { cache[k] = v; } }) },
   console, Logger: { log() {} }, Date,
 };
 vm.createContext(ctx); vm.runInContext(src + '\nthis.__t = { enviarCadastro, enviarHorarios, doGet, indiceColuna_ };', ctx);
@@ -57,4 +58,6 @@ assert.throws(curto({ horarios: [{ dia: 'dom', inicio: '08:00', fim: '12:00' }] 
 assert.throws(curto({ horarios: [{ dia: 'seg', inicio: '08:15', fim: '12:00' }] }), /Confira os horários/);
 assert.throws(curto({ horarios: [] }), /pelo menos um horário/);
 assert.throws(curto({ nomeCompleto: 'Ana' }), /nome e sobrenome/);
+// Foto que não é JPEG (auditoria de 29/10/2026) é recusada.
+assert.throws(() => ctx.__t.enviarCadastro({ ...base, foto: { base64: 'NAOJPEG' } }), /foto não abriu/);
 console.log('ok: reenvio não substitui, resposta igual, chave própria no sistema, doGet sem página antiga, horários no cadastro e no link curto');

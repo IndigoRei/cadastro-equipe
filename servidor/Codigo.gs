@@ -31,8 +31,11 @@ const CONFIG = {
   NOME_PLANILHA: 'Cadastro da Equipe Índigo Rei (respostas)',
   // "logo indigo.png" no Drive. Para usar outra versão da logo, troque o ID aqui e rode configurar() de novo.
   LOGO_ID_ORIGINAL: '14d-PAMhKAxQ78yzhp3sOZ2SulrqBL_Jl',
-  FOTO_MAX_MB: 15,
-  FUSO: 'America/Sao_Paulo'
+  // A página reduz a foto e manda sempre JPEG; 5 MB sobra (auditoria do sistema de 29/10/2026: eram 15 MB de qualquer coisa).
+  FOTO_MAX_MB: 5,
+  FUSO: 'America/Sao_Paulo',
+  // Limite de envios (auditoria de 29/10/2026): o endereço do servidor está na página pública.
+  ENVIOS_POR_HORA: 20
 };
 
 // [chave usada no formulário, título da coluna na planilha]
@@ -93,6 +96,9 @@ function doGet(e) {
 function doPost(e) {
   try {
     const dados = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (!dentroDoLimite_('equipe-hora', CONFIG.ENVIOS_POR_HORA, 3600)) {
+      throw new Error('Recebemos muitos envios agora. Tente de novo daqui a pouco ou fale com a Índigo pelo WhatsApp.');
+    }
     // Link curto equipe.indigorei.com.br/horarios: só nome, e-mail e horários (Davi, 25/10/2026).
     if (dados && dados.formulario === 'horarios') return json_(enviarHorarios(dados));
     return json_(enviarCadastro(dados));
@@ -287,6 +293,8 @@ function enviarCadastro(dados) {
   // Foto
   const bytes = Utilities.base64Decode(String(dados.foto.base64));
   if (bytes.length > CONFIG.FOTO_MAX_MB * 1024 * 1024) throw new Error('A foto ficou grande demais. Tente outra imagem.');
+  // JPEG de verdade (começa com FF D8 FF; no Apps Script os bytes vêm com sinal: -1, -40, -1).
+  if (bytes.length < 4 || bytes[0] !== -1 || bytes[1] !== -40 || bytes[2] !== -1) throw new Error('A foto não abriu. Tente outra imagem.');
   const carimbo = Utilities.formatDate(new Date(), CONFIG.FUSO, 'yyyy-MM-dd HH.mm');
   const nomeArquivo = nomeArquivo_(r.nomeProfissional || r.nomeCompleto) + ' ' + carimbo + '.jpg';
   const arquivo = pastaFotos.createFile(Utilities.newBlob(bytes, 'image/jpeg', nomeArquivo));
@@ -481,6 +489,17 @@ function enviarHistoricoAoSistema() {
 /* ------------------------------------------------------------------ */
 /* Utilitários                                                         */
 /* ------------------------------------------------------------------ */
+
+// Conta envios por janela no cache do script; passou do máximo, devolve false. O cache pode esquecer antes da hora: é um
+// freio para robô, não uma conta exata.
+function dentroDoLimite_(nome, maximo, segundos) {
+  const cache = CacheService.getScriptCache();
+  const chave = 'limite:' + nome + ':' + Math.floor(Date.now() / (segundos * 1000));
+  const n = Number(cache.get(chave) || 0);
+  if (n >= maximo) return false;
+  cache.put(chave, String(n + 1), segundos + 60);
+  return true;
+}
 
 function pegarPasta_(id) {
   if (!id) return null;
